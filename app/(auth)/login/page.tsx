@@ -13,40 +13,62 @@ export default function LoginPage() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+    setSuccessMessage(null);
     setLoading(true);
 
     try {
       if (isSignUp) {
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { name } }, // dipakai trigger handle_new_user
+          options: { data: { name } },
         });
         if (signUpError) throw signUpError;
+
+        // Kalau session null, berarti Supabase menunggu konfirmasi email dulu
+        if (!data.session) {
+          setSuccessMessage('Pendaftaran berhasil. Silakan cek email Anda dan klik link konfirmasi sebelum bisa login.');
+          setIsSignUp(false); // pindah balik ke form login
+          setLoading(false);
+          return;
+        }
+
+        // Kalau session langsung ada (berarti email confirmation dimatikan), lanjut redirect seperti biasa
+        await redirectByRole(data.user!.id);
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-        if (signInError) throw signInError;
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+
+        if (signInError) {
+          // Pesan error spesifik kalau memang belum konfirmasi email
+          if (signInError.message.includes('Email not confirmed')) {
+            throw new Error('Email belum dikonfirmasi. Silakan cek inbox/spam email Anda.');
+          }
+          throw signInError;
+        }
+
+        await redirectByRole(data.user!.id);
       }
-
-      // Ambil role user untuk redirect ke dashboard yang sesuai
-      const { data: { user } } = await supabase.auth.getUser();
-      const { data: profile } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', user!.id)
-        .single();
-
-      router.push(profile?.role === 'admin' ? '/admin/dashboard' : '/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Terjadi kesalahan, coba lagi.');
     } finally {
       setLoading(false);
     }
+  }
+
+  async function redirectByRole(userId: string) {
+    const { data: profile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', userId)
+      .single();
+
+    router.push(profile?.role === 'admin' ? '/admin/dashboard' : '/dashboard');
   }
 
   return (
@@ -93,6 +115,7 @@ export default function LoginPage() {
           </div>
 
           {error && <p className="text-xs text-red-600">{error}</p>}
+          {successMessage && <p className="text-xs text-green-600">{successMessage}</p>}
 
           <button
             type="submit"
@@ -104,7 +127,11 @@ export default function LoginPage() {
         </form>
 
         <button
-          onClick={() => setIsSignUp(!isSignUp)}
+          onClick={() => {
+            setIsSignUp(!isSignUp);
+            setError(null);
+            setSuccessMessage(null);
+          }}
           className="mt-4 w-full text-center text-xs text-gray-500"
         >
           {isSignUp ? 'Sudah punya akun? Masuk' : 'Belum punya akun? Daftar'}

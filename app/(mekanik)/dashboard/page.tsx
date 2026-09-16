@@ -17,7 +17,6 @@ export default async function DashboardPage() {
 
   if (profile?.role === 'admin') redirect('/admin/dashboard');
 
-  // Ringkasan jumlah per status
   const { data: allBapp } = await supabase
     .from('bapp')
     .select('id, status, created_at')
@@ -26,15 +25,19 @@ export default async function DashboardPage() {
   const counts = {
     draft: allBapp?.filter((b) => b.status === 'draft').length ?? 0,
     signedMekanik: allBapp?.filter((b) => b.status === 'signed_mekanik').length ?? 0,
-    completedThisMonth: allBapp?.filter((b) => {
-      const d = new Date(b.created_at);
-      const now = new Date();
-      return b.status === 'completed' && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-    }).length ?? 0,
+    completedThisMonth:
+      allBapp?.filter((b) => {
+        const d = new Date(b.created_at);
+        const now = new Date();
+        return (
+          b.status === 'completed' &&
+          d.getMonth() === now.getMonth() &&
+          d.getFullYear() === now.getFullYear()
+        );
+      }).length ?? 0,
     total: allBapp?.length ?? 0,
   };
 
-  // 5 BAPP terbaru
   const { data: recentBapp } = await supabase
     .from('bapp')
     .select('id, unit_model, nama_customer, status, created_at')
@@ -57,17 +60,19 @@ export default async function DashboardPage() {
       </div>
 
       <div className="px-4">
-        
+        <a
           href="/bapp/new"
           className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-black text-sm font-medium text-white"
         >
-          + Buat BAPP baru
+          Buat BAPP baru
         </a>
       </div>
 
       <div className="mt-6 flex items-center justify-between px-4">
         <p className="text-sm font-medium">Terbaru</p>
-        <a href="/history" className="text-xs text-blue-600">Lihat semua</a>
+        <a href="/history" className="text-xs text-blue-600">
+          Lihat semua
+        </a>
       </div>
 
       <div className="flex flex-col gap-2 px-4 py-2">
