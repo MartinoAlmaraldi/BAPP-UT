@@ -1,0 +1,41 @@
+import { createServerClient } from '@/lib/supabase/server';
+import { redirect, notFound } from 'next/navigation';
+import JobDescTable from '@/components/form/JobDescTable';
+
+export default async function JobDescPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createServerClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const { data: bapp } = await supabase
+    .from('bapp')
+    .select('id, job_desc:bapp_job_desc(component, job_desc, remarks, urutan)')
+    .eq('id', id)
+    .single();
+
+  if (!bapp) notFound();
+
+  const sortedJobDesc = (bapp.job_desc ?? []).sort((a, b) => a.urutan - b.urutan);
+
+  return (
+    <div className="flex min-h-screen flex-col">
+      <div className="px-4 pt-6">
+        <h1 className="text-lg font-medium">BAPP baru</h1>
+      </div>
+
+      <div className="flex gap-1.5 px-4 py-4">
+        <div className="h-1 flex-1 rounded-full bg-black" />
+        <div className="h-1 flex-1 rounded-full bg-black" />
+        <div className="h-1 flex-1 rounded-full bg-gray-200" />
+      </div>
+
+      <p className="px-4 pb-3 text-xs text-gray-500">Langkah 2 dari 3 &middot; Pekerjaan yang dilakukan</p>
+
+      <JobDescTable bappId={bapp.id} initialRows={sortedJobDesc} />
+    </div>
+  );
+}
