@@ -5,12 +5,16 @@ import BottomNav from '@/components/layout/BottomNav';
 import type { BappStatus } from '@/types/bapp';
 
 interface HistoryPageProps {
-  searchParams: { status?: BappStatus; q?: string };
+  searchParams: Promise<{ status?: BappStatus; q?: string }>;
 }
 
 export default async function HistoryPage({ searchParams }: HistoryPageProps) {
-  const supabase = createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const params = await searchParams;
+  const supabase = await createServerClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
   let query = supabase
@@ -19,11 +23,11 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
     .eq('mekanik_id', user.id)
     .order('created_at', { ascending: false });
 
-  if (searchParams.status) {
-    query = query.eq('status', searchParams.status);
+  if (params.status) {
+    query = query.eq('status', params.status);
   }
-  if (searchParams.q) {
-    query = query.or(`unit_model.ilike.%${searchParams.q}%,nama_customer.ilike.%${searchParams.q}%`);
+  if (params.q) {
+    query = query.or('unit_model.ilike.%' + params.q + '%,nama_customer.ilike.%' + params.q + '%');
   }
 
   const { data: bappList } = await query;
@@ -45,26 +49,26 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
         <input
           type="text"
           name="q"
-          defaultValue={searchParams.q}
+          defaultValue={params.q}
           placeholder="Cari unit atau customer"
           className="w-full rounded-lg border px-3 py-2 text-sm"
         />
       </form>
 
       <div className="flex gap-2 overflow-x-auto px-4 pb-3">
-        {filters.map((f) => (
-          
-            key={f.label}
-            href={f.value ? `/history?status=${f.value}` : '/history'}
-            className={`whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium ${
-              searchParams.status === f.value
-                ? 'bg-black text-white'
-                : 'border text-gray-600'
-            }`}
-          >
-            {f.label}
-          </a>
-        ))}
+        {filters.map((f) => {
+          const isActive = params.status === f.value;
+          const href = f.value ? '/history?status=' + f.value : '/history';
+          const filterClass = isActive
+            ? 'whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-medium bg-black text-white'
+            : 'whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-medium text-gray-600';
+
+          return (
+            <a key={f.label} href={href} className={filterClass}>
+              {f.label}
+            </a>
+          );
+        })}
       </div>
 
       <div className="flex flex-col gap-2 px-4 py-2">

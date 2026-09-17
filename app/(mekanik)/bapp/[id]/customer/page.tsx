@@ -107,6 +107,8 @@ export default function CustomerPage() {
 
       if (updateError) throw updateError;
 
+      await fetch('/api/bapp/' + bappId + '/generate-pdf', { method: 'POST' });
+
       router.push('/bapp/' + bappId + '/result');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Gagal menyimpan, coba lagi.');
