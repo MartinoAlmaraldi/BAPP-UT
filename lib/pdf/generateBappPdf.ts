@@ -1,6 +1,6 @@
 import { PDFDocument, StandardFonts, rgb, PDFFont, PDFPage } from 'pdf-lib';
 import { createClient } from '@supabase/supabase-js';
-import { PAGE_WIDTH, PAGE_HEIGHT, MAX_JOB_DESC_ROWS, BAPP_COORDINATES } from './coordinates';
+import { PAGE_WIDTH, PAGE_HEIGHT, MAX_JOB_DESC_ROWS } from './coordinates';
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL as string,
@@ -76,9 +76,11 @@ function drawCheckbox(page: PDFPage, font: PDFFont, label: string, x: number, to
   const y = fromTop(top);
   page.drawRectangle({ x, y, width: 8, height: 8, borderColor: rgb(0, 0, 0), borderWidth: 0.8 });
   if (checked) {
-    page.drawText('X', { x: x + 1, y: y + 0.5, size: 7, font });
+    // Gambar tanda centang manual (2 garis pendek), bukan huruf X
+    page.drawLine({ start: { x: x + 1.3, y: y + 4 }, end: { x: x + 3.3, y: y + 1.5 }, thickness: 1, color: rgb(0, 0, 0) });
+    page.drawLine({ start: { x: x + 3.3, y: y + 1.5 }, end: { x: x + 7, y: y + 6.5 }, thickness: 1, color: rgb(0, 0, 0) });
   }
-  page.drawText(label, { x: x + 12, y: y + 0.5, size: 8, font });
+  page.drawText(label, { x: x + 12, y: y + 0.5, size: 7, font });
 }
 
 function hLine(page: PDFPage, x1: number, x2: number, top: number) {
@@ -89,64 +91,69 @@ function vLine(page: PDFPage, x: number, top1: number, top2: number) {
   page.drawLine({ start: { x, y: fromTop(top1) }, end: { x, y: fromTop(top2) }, thickness: 0.75, color: rgb(0, 0, 0) });
 }
 
-function box(page: PDFPage, x: number, top: number, width: number, height: number) {
-  page.drawRectangle({ x, y: fromTop(top + height), width, height, borderColor: rgb(0, 0, 0), borderWidth: 0.75 });
+function box(page: PDFPage, x1: number, top1: number, x2: number, top2: number) {
+  page.drawRectangle({ x: x1, y: fromTop(top2), width: x2 - x1, height: top2 - top1, borderColor: rgb(0, 0, 0), borderWidth: 0.75 });
 }
 
-// Menulis teks rata tengah dalam rentang kolom [x1, x2] pada baseline 'top'
 function centeredText(page: PDFPage, font: PDFFont, text: string, x1: number, x2: number, top: number, size: number) {
-  const textWidth = font.widthOfTextAtSize(text, size);
-  const x = x1 + (x2 - x1 - textWidth) / 2;
-  page.drawText(text, { x, y: fromTop(top), size, font });
+  const w = font.widthOfTextAtSize(text, size);
+  page.drawText(text, { x: x1 + (x2 - x1 - w) / 2, y: fromTop(top), size, font });
 }
 
-// Boundary baris tabel waktu proses persis hasil ekstraksi dari template asli
-const WAKTU_ROW_BOUNDS = [455.2, 466.4, 477.4, 488.5, 499.6, 510.7, 521.7, 533.3];
+function rightText(page: PDFPage, font: PDFFont, text: string, xRight: number, top: number, size: number) {
+  const w = font.widthOfTextAtSize(text, size);
+  page.drawText(text, { x: xRight - w, y: fromTop(top), size, font });
+}
+
+// ===== KOORDINAT PRESISI (hasil ekstraksi langsung dari template F4 asli) =====
+const UNIT_TABLE = {
+  left: 23.3, right: 586.4,
+  top1: 134.1, top2: 147.1, top3: 160.6, bottom: 182.3,
+  cols: { model: 23.8, serialNo: 115.3, codeUnit: 193.7, engineModel: 272.2, engineSerialNo: 350.1, smr: 428.5, location: 507.0 },
+};
+
+const JOB_DESC_TABLE = { left: 22.3, right: 587.3, top: 199.1, headerBottom: 216.3, bottom: 412.0, cols: [22.3, 50.8, 158.4, 490.2, 587.3] };
+
+const WAKTU_TABLE = { left: 22.9, right: 327.2, top: 455.0, headerBottom: 466.1, bottom: 533.1, colLabel: 152.2, colTanggal: 241.5, rowH: 11.05 };
+
+const CUSTOMER_BOX = { left: 376.3, right: 583.8, top: 455.0, bottom: 534.8 };
+const CATATAN_MEKANIK_BOX = { left: 22.3, right: 587.3, top: 557.0, bottom: 649.4 };
+const CATATAN_CUSTOMER_BOX = { left: 22.3, right: 587.3, top: 675.6, bottom: 771.2 };
+const SIGN_AREA = { left: 22.6, right: 586.9, mid: (22.6 + 586.9) / 2 };
+const CUST_HALF_CENTER = (SIGN_AREA.left + SIGN_AREA.mid) / 2;
+const MEK_HALF_CENTER = (SIGN_AREA.mid + SIGN_AREA.right) / 2;
 
 function drawAllTables(page: PDFPage) {
-  const LEFT = 23;
-  const RIGHT = 585.8;
+  // Tabel Unit/Engine
+  box(page, UNIT_TABLE.left, UNIT_TABLE.top1, UNIT_TABLE.right, UNIT_TABLE.bottom);
+  // Garis header1/header2 dan header2/data HANYA untuk area UNIT+ENGINE, SMR & LOCATION menyatu (rowspan)
+  hLine(page, UNIT_TABLE.left, UNIT_TABLE.cols.smr, UNIT_TABLE.top2);
+  hLine(page, UNIT_TABLE.left, UNIT_TABLE.right, UNIT_TABLE.top3);
+  vLine(page, UNIT_TABLE.cols.engineModel - 0.5, UNIT_TABLE.top1, UNIT_TABLE.top2); // UNIT|ENGINE (header1)
+  vLine(page, UNIT_TABLE.cols.smr, UNIT_TABLE.top1, UNIT_TABLE.bottom);
+  vLine(page, UNIT_TABLE.cols.location, UNIT_TABLE.top1, UNIT_TABLE.bottom);
+  [UNIT_TABLE.cols.serialNo, UNIT_TABLE.cols.codeUnit, UNIT_TABLE.cols.engineModel, UNIT_TABLE.cols.engineSerialNo].forEach((x) =>
+    vLine(page, x, UNIT_TABLE.top2, UNIT_TABLE.bottom)
+  );
 
-  const unitTop = 133.8;
-  const unitMidRow = 147.4;
-  const unitDataRow = 160.8;
-  const unitBottom = 182.5;
+  // Tabel Job Desc
+  box(page, JOB_DESC_TABLE.left, JOB_DESC_TABLE.top, JOB_DESC_TABLE.right, JOB_DESC_TABLE.bottom);
+  hLine(page, JOB_DESC_TABLE.left, JOB_DESC_TABLE.right, JOB_DESC_TABLE.headerBottom);
+  JOB_DESC_TABLE.cols.slice(1, -1).forEach((x) => vLine(page, x, JOB_DESC_TABLE.top, JOB_DESC_TABLE.bottom));
+  const jdRowH = (JOB_DESC_TABLE.bottom - JOB_DESC_TABLE.headerBottom) / MAX_JOB_DESC_ROWS;
+  for (let i = 1; i < MAX_JOB_DESC_ROWS; i++) hLine(page, JOB_DESC_TABLE.left, JOB_DESC_TABLE.right, JOB_DESC_TABLE.headerBottom + i * jdRowH);
 
-  box(page, LEFT, unitTop, RIGHT - LEFT, unitBottom - unitTop);
-  hLine(page, LEFT, RIGHT, unitMidRow);
-  hLine(page, LEFT, RIGHT, unitDataRow);
+  // Tabel Waktu Proses
+  box(page, WAKTU_TABLE.left, WAKTU_TABLE.top, WAKTU_TABLE.right, WAKTU_TABLE.bottom);
+  vLine(page, WAKTU_TABLE.colLabel, WAKTU_TABLE.top, WAKTU_TABLE.bottom);
+  vLine(page, WAKTU_TABLE.colTanggal, WAKTU_TABLE.top, WAKTU_TABLE.bottom);
+  for (let i = 1; i <= 6; i++) hLine(page, WAKTU_TABLE.left, WAKTU_TABLE.right, WAKTU_TABLE.headerBottom + (i - 1) * WAKTU_TABLE.rowH);
 
-  vLine(page, 296, unitTop, unitMidRow);
-  vLine(page, 449, unitTop, unitBottom);
-  vLine(page, 512, unitTop, unitBottom);
-  [130, 209, 366].forEach((x) => vLine(page, x, unitMidRow, unitBottom));
+  // Kotak Customer, Catatan, TTD
+  box(page, CUSTOMER_BOX.left, CUSTOMER_BOX.top, CUSTOMER_BOX.right, CUSTOMER_BOX.bottom);
+  box(page, CATATAN_MEKANIK_BOX.left, CATATAN_MEKANIK_BOX.top, CATATAN_MEKANIK_BOX.right, CATATAN_MEKANIK_BOX.bottom);
+  box(page, CATATAN_CUSTOMER_BOX.left, CATATAN_CUSTOMER_BOX.top, CATATAN_CUSTOMER_BOX.right, CATATAN_CUSTOMER_BOX.bottom);
 
-  const jdTop = 198.7;
-  const jdHeaderBottom = 216.6;
-  const jdBottom = 412.4;
-
-  box(page, LEFT, jdTop, RIGHT - LEFT, jdBottom - jdTop);
-  hLine(page, LEFT, RIGHT, jdHeaderBottom);
-
-  [65, 228, 508].forEach((x) => vLine(page, x, jdTop, jdBottom));
-
-  const rowHeight = (jdBottom - jdHeaderBottom) / MAX_JOB_DESC_ROWS;
-  for (let i = 1; i < MAX_JOB_DESC_ROWS; i++) {
-    hLine(page, LEFT, RIGHT, jdHeaderBottom + i * rowHeight);
-  }
-
-  const wpRight = 327;
-  box(page, LEFT, WAKTU_ROW_BOUNDS[0], wpRight - LEFT, WAKTU_ROW_BOUNDS[7] - WAKTU_ROW_BOUNDS[0]);
-  vLine(page, 165, WAKTU_ROW_BOUNDS[0], WAKTU_ROW_BOUNDS[7]);
-  vLine(page, 260, WAKTU_ROW_BOUNDS[0], WAKTU_ROW_BOUNDS[7]);
-  WAKTU_ROW_BOUNDS.slice(1, -1).forEach((top) => hLine(page, LEFT, wpRight, top));
-
-  box(page, 389.6, 457.9, 585.8 - 389.6, 533 - 457.9);
-  box(page, LEFT, 546.6, RIGHT - LEFT, 660 - 546.6);
-  box(page, LEFT, 665.1, RIGHT - LEFT, 800 - 665.1);
-
-  hLine(page, 90, 240, 878);
-  hLine(page, 400, 550, 878);
 }
 
 export async function generateBappPdf(bapp: BappData): Promise<Uint8Array> {
@@ -154,159 +161,194 @@ export async function generateBappPdf(bapp: BappData): Promise<Uint8Array> {
   const page = pdfDoc.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
   const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
-  const c = BAPP_COORDINATES;
 
   drawAllTables(page);
 
+  // ===== HEADER =====
   const logoUrl = await getConfigValue('logo_url');
+  if (!logoUrl) {
+    console.log('PERINGATAN: logo_url kosong di tabel config, logo tidak akan tampil.');
+  }
   if (logoUrl) {
     try {
       const logoBytes = await fetchImageBytes(logoUrl);
       const logoImage = await pdfDoc.embedPng(logoBytes);
-      page.drawImage(logoImage, { x: c.header.logoX, y: fromTop(c.header.logoTop), width: c.header.logoSize, height: c.header.logoSize });
+      page.drawImage(logoImage, { x: 23, y: fromTop(58), width: 32, height: 32 });
     } catch (err) {
       console.error('Gagal ambil logo:', err);
     }
   }
 
-  page.drawText('PT UNITED TRACTORS Tbk.', { x: 64, y: fromTop(50), size: 13, font: fontBold });
-  page.drawText(bapp.nomor_form, { x: c.header.nomorFormX, y: fromTop(c.header.nomorFormTop), size: 8, font });
-  page.drawText('BERITA ACARA PENYERAHAN PEKERJAAN', { x: 180, y: fromTop(85.5), size: 11, font: fontBold });
-  page.drawText('( B A P P )', { x: 275, y: fromTop(100), size: 11, font: fontBold });
+  page.drawText('PT UNITED TRACTORS Tbk.', { x: 64, y: fromTop(48), size: 13, font: fontBold });
+  rightText(page, fontBold, bapp.nomor_form, 586.4, 32, 8);
+  centeredText(page, fontBold, 'BERITA ACARA PENYERAHAN PEKERJAAN', 0, PAGE_WIDTH, 83, 10);
+  centeredText(page, fontBold, '( B A P P )', 0, PAGE_WIDTH, 96, 10);
 
+  // ===== PARAGRAF PEMBUKA (campuran bold & regular dalam satu baris) =====
   const tanggalDate = bapp.tanggal_penyerahan ? new Date(bapp.tanggal_penyerahan) : null;
-  const hariStr = tanggalDate ? HARI_NAMES[tanggalDate.getDay()] : '......................';
+  const hariStr = tanggalDate ? HARI_NAMES[tanggalDate.getDay()] : '....................................................';
   const tanggalAngka = tanggalDate
     ? String(tanggalDate.getDate()).padStart(2, '0') + '/' + String(tanggalDate.getMonth() + 1).padStart(2, '0') + '/' + tanggalDate.getFullYear()
-    : '............/............/............';
+    : '…………../……………../……………..';
 
-  page.drawText('Pada hari ' + hariStr + ' tanggal (' + tanggalAngka + ') telah dilakukan penyerahan pekerjaan dari PT. UNITED', {
-    x: 23,
-    y: fromTop(121.6),
-    size: 8,
-    font,
-  });
-  page.drawText('TRACTORS Tbk. kepada ' + (bapp.nama_customer ?? '') + ' sebagai berikut :', {
-    x: 23,
-    y: fromTop(131),
-    size: 8,
-    font,
-  });
+  let x = 23;
+  const size1 = 8;
+  const writeSeq = (segs: { text: string; bold: boolean }[], top: number) => {
+    let curX = 23;
+    segs.forEach((seg) => {
+      const f = seg.bold ? fontBold : font;
+      page.drawText(seg.text, { x: curX, y: fromTop(top), size: size1, font: f });
+      curX += f.widthOfTextAtSize(seg.text, size1);
+    });
+  };
 
-  // Header tabel unit/engine, semua di-tengah-kan sesuai kolomnya
-  centeredText(page, fontBold, 'UNIT', 23, 296, 142, 7);
-  centeredText(page, fontBold, 'ENGINE', 296, 449, 142, 7);
-  centeredText(page, fontBold, 'SMR', 449, 512, 140, 6);
-  centeredText(page, fontBold, '(HM/KM)', 449, 512, 147, 6);
-  centeredText(page, fontBold, 'LOCATION', 512, 585.8, 143, 6);
-  centeredText(page, fontBold, 'MODEL', 23, 130, 156, 6);
-  centeredText(page, fontBold, 'SERIAL NO.', 130, 209, 156, 6);
-  centeredText(page, fontBold, 'CODE UNIT', 209, 296, 156, 6);
-  centeredText(page, fontBold, 'MODEL', 296, 366, 156, 6);
-  centeredText(page, fontBold, 'SERIAL NO.', 366, 449, 156, 6);
+  writeSeq(
+    [
+      { text: 'Pada hari ' + hariStr + ' tanggal (' + tanggalAngka + ') telah dilakukan penyerahan pekerjaan dari ', bold: false },
+      { text: 'PT. UNITED', bold: true },
+    ],
+    113.5
+  );
+  writeSeq(
+    [
+      { text: 'TRACTORS Tbk. kepada ', bold: true },
+      { text: bapp.nama_customer ?? '......................................................................................................................', bold: false },
+      { text: ' sebagai berikut :', bold: true },
+    ],
+    128.5
+  );
 
-  const unitRowY = fromTop(c.unitTable.rowTop);
-  page.drawText(bapp.unit_model ?? '', { x: c.unitTable.columns.model, y: unitRowY, size: 8, font });
-  page.drawText(bapp.unit_serial_no ?? '', { x: c.unitTable.columns.serialNo, y: unitRowY, size: 8, font });
-  page.drawText(bapp.unit_code ?? '', { x: c.unitTable.columns.codeUnit, y: unitRowY, size: 8, font });
-  page.drawText(bapp.engine_model ?? '', { x: c.unitTable.columns.engineModel, y: unitRowY, size: 8, font });
-  page.drawText(bapp.engine_serial_no ?? '', { x: c.unitTable.columns.engineSerialNo, y: unitRowY, size: 8, font });
-  page.drawText(bapp.smr ?? '', { x: c.unitTable.columns.smr, y: unitRowY, size: 8, font });
-  page.drawText(bapp.unit_location ?? '', { x: c.unitTable.columns.location, y: unitRowY, size: 8, font });
+  // ===== HEADER TABEL UNIT/ENGINE (size 8, bold) =====
+  // Catatan: baseline = tengah_baris + (size * 0.3) supaya teks benar2 center, TIDAK menembus garis atas
+  centeredText(page, fontBold, 'UNIT', UNIT_TABLE.left, UNIT_TABLE.cols.engineModel, 143.5, 8);
+  centeredText(page, fontBold, 'ENGINE', UNIT_TABLE.cols.engineModel, UNIT_TABLE.cols.smr, 143.5, 8);
+  centeredText(page, fontBold, 'SMR', UNIT_TABLE.cols.smr, UNIT_TABLE.cols.location, 145, 8);
+  centeredText(page, fontBold, '(HM/KM)', UNIT_TABLE.cols.smr, UNIT_TABLE.cols.location, 154, 8);
+  centeredText(page, fontBold, 'LOCATION', UNIT_TABLE.cols.location, UNIT_TABLE.right, 150, 8);
+  centeredText(page, fontBold, 'MODEL', UNIT_TABLE.cols.model, UNIT_TABLE.cols.serialNo, 156, 8);
+  centeredText(page, fontBold, 'SERIAL NO.', UNIT_TABLE.cols.serialNo, UNIT_TABLE.cols.codeUnit, 156, 8);
+  centeredText(page, fontBold, 'CODE UNIT', UNIT_TABLE.cols.codeUnit, UNIT_TABLE.cols.engineModel, 156, 8);
+  centeredText(page, fontBold, 'MODEL', UNIT_TABLE.cols.engineModel, UNIT_TABLE.cols.engineSerialNo, 156, 8);
+  centeredText(page, fontBold, 'SERIAL NO.', UNIT_TABLE.cols.engineSerialNo, UNIT_TABLE.cols.smr, 156, 8);
 
-  page.drawText('Pekerjaan yang telah dilakukan pada unit tersebut adalah :', { x: 23, y: fromTop(192), size: 8, font });
+  const unitRowY = fromTop((UNIT_TABLE.top3 + UNIT_TABLE.bottom) / 2 + 3);
+  page.drawText(bapp.unit_model ?? '', { x: UNIT_TABLE.cols.model + 4, y: unitRowY, size: 8, font });
+  page.drawText(bapp.unit_serial_no ?? '', { x: UNIT_TABLE.cols.serialNo + 4, y: unitRowY, size: 8, font });
+  page.drawText(bapp.unit_code ?? '', { x: UNIT_TABLE.cols.codeUnit + 4, y: unitRowY, size: 8, font });
+  page.drawText(bapp.engine_model ?? '', { x: UNIT_TABLE.cols.engineModel + 4, y: unitRowY, size: 8, font });
+  page.drawText(bapp.engine_serial_no ?? '', { x: UNIT_TABLE.cols.engineSerialNo + 4, y: unitRowY, size: 8, font });
+  page.drawText(bapp.smr ?? '', { x: UNIT_TABLE.cols.smr + 4, y: unitRowY, size: 8, font });
+  page.drawText(bapp.unit_location ?? '', { x: UNIT_TABLE.cols.location + 4, y: unitRowY, size: 8, font });
 
-  centeredText(page, fontBold, 'NO', 23, 65, 209, 7);
-  centeredText(page, fontBold, 'COMPONENT', 65, 228, 209, 7);
-  centeredText(page, fontBold, 'JOB DESC', 228, 508, 209, 7);
-  centeredText(page, fontBold, 'REMARKS', 508, 585.8, 209, 7);
+  page.drawText('Pekerjaan yang telah dilakukan pada unit tersebut adalah :', { x: 23, y: fromTop(193.5), size: 8, font });
 
-  const rowHeight = (c.jobDesc.bottom - c.jobDesc.top) / MAX_JOB_DESC_ROWS;
+  // ===== HEADER TABEL JOB DESC =====
+  centeredText(page, fontBold, 'NO', JOB_DESC_TABLE.cols[0], JOB_DESC_TABLE.cols[1], 210, 8);
+  centeredText(page, fontBold, 'COMPONENT', JOB_DESC_TABLE.cols[1], JOB_DESC_TABLE.cols[2], 210, 8);
+  centeredText(page, fontBold, 'JOB DESC', JOB_DESC_TABLE.cols[2], JOB_DESC_TABLE.cols[3], 210, 8);
+  centeredText(page, fontBold, 'REMARKS', JOB_DESC_TABLE.cols[3], JOB_DESC_TABLE.cols[4], 210, 8);
+
+  const jdRowH2 = (JOB_DESC_TABLE.bottom - JOB_DESC_TABLE.headerBottom) / MAX_JOB_DESC_ROWS;
   const sortedJobDesc = [...bapp.job_desc].sort((a, b) => a.urutan - b.urutan).slice(0, MAX_JOB_DESC_ROWS);
-
   sortedJobDesc.forEach((row, i) => {
-    const rowTop = c.jobDesc.top + i * rowHeight + 4;
+    const rowTop = JOB_DESC_TABLE.headerBottom + i * jdRowH2 + 12.5;
     const y = fromTop(rowTop);
-    page.drawText(String(row.urutan), { x: c.jobDesc.columns.no, y, size: 8, font });
-    page.drawText(row.component ?? '', { x: c.jobDesc.columns.component, y, size: 8, font });
-    page.drawText((row.job_desc ?? '').slice(0, 60), { x: c.jobDesc.columns.jobDesc, y, size: 8, font });
-    page.drawText(row.remarks ?? '', { x: c.jobDesc.columns.remarks, y, size: 8, font });
+    page.drawText(String(row.urutan), { x: JOB_DESC_TABLE.cols[0] + 8, y, size: 8, font });
+    page.drawText(row.component ?? '', { x: JOB_DESC_TABLE.cols[1] + 5, y, size: 8, font });
+    page.drawText((row.job_desc ?? '').slice(0, 60), { x: JOB_DESC_TABLE.cols[2] + 5, y, size: 8, font });
+    page.drawText(row.remarks ?? '', { x: JOB_DESC_TABLE.cols[3] + 5, y, size: 8, font });
   });
 
+  // ===== KESIMPULAN (campuran bold & regular) =====
   page.drawText(
     'Mekanik PT. UNITED TRACTORS Tbk. bersama petugas lapangan telah melakukan uji coba terhadap unit tersebut di atas dengan kesimpulan unit',
-    { x: 23, y: fromTop(427.3), size: 8, font }
+    { x: 23, y: fromTop(425.6), size: 8, font }
   );
   const kondisiText = bapp.kondisi_unit === 'baik' ? 'BAIK' : 'TIDAK BAIK';
   const kesiapanText = bapp.kesiapan_unit === 'siap' ? 'SIAP' : 'TIDAK SIAP';
-  page.drawText('dalam kondisi ( ' + kondisiText + ' ) dan ( ' + kesiapanText + ' ) untuk operasi.', { x: 23, y: fromTop(438), size: 8, font: fontBold });
+  writeSeq(
+    [
+      { text: 'dalam kondisi ', bold: false },
+      { text: '( ' + kondisiText + ' ) dan ( ' + kesiapanText + ' )', bold: true },
+      { text: ' untuk operasi.', bold: false },
+    ],
+    436.2
+  );
   page.drawText('Demikian Berita Acara Penyerahan Pekerjaan ini kami buat untuk dapat dipergunakan sebagaimana mestinya.', {
     x: 23,
-    y: fromTop(448.4),
+    y: fromTop(446.8),
     size: 8,
     font,
   });
 
-  centeredText(page, fontBold, 'Tanggal', 23, 260, 463, 7);
-  centeredText(page, fontBold, 'Jam', 260, 327, 463, 7);
+  // ===== TABEL WAKTU PROSES =====
+  centeredText(page, fontBold, 'Tanggal', WAKTU_TABLE.colLabel, WAKTU_TABLE.colTanggal, 463, 8);
+  centeredText(page, fontBold, 'Jam', WAKTU_TABLE.colTanggal, WAKTU_TABLE.right, 463, 8);
 
   const waktuLabels = ['Cust Request', 'Mech Sent', 'Start Diagnose', 'Start Waiting', 'Start Job', 'Finish Job'];
   const waktuValues = [bapp.cust_request_at, bapp.mech_sent_at, bapp.start_diagnose_at, bapp.start_waiting_at, bapp.start_job_at, bapp.finish_job_at];
-
   waktuValues.forEach((value, i) => {
-    const rowTopBound = WAKTU_ROW_BOUNDS[i + 1];
-    const rowBottomBound = WAKTU_ROW_BOUNDS[i + 2];
-    const textTop = (rowTopBound + rowBottomBound) / 2 + 2.5;
-    page.drawText(waktuLabels[i], { x: 26, y: fromTop(textTop), size: 7, font });
+    const rowTop = WAKTU_TABLE.headerBottom + i * WAKTU_TABLE.rowH + 7.5;
+    page.drawText(waktuLabels[i], { x: 26, y: fromTop(rowTop), size: 7, font: fontBold });
     const { tanggal, jam } = formatDateTime(value);
-    page.drawText(tanggal, { x: c.waktuProses.columns.tanggal, y: fromTop(textTop), size: 7, font });
-    page.drawText(jam, { x: c.waktuProses.columns.jam, y: fromTop(textTop), size: 7, font });
+    page.drawText(tanggal, { x: WAKTU_TABLE.colLabel + 8, y: fromTop(rowTop), size: 7, font });
+    page.drawText(jam, { x: WAKTU_TABLE.colTanggal + 8, y: fromTop(rowTop), size: 7, font });
   });
 
-  page.drawText('DIISI OLEH CUSTOMER', { x: 400, y: fromTop(468), size: 7, font: fontBold });
-  page.drawText('Berilah tanda pada kotak dimaksud :', { x: 400, y: fromTop(478), size: 6, font });
-  page.drawText('HASIL PEKERJAAN UT :', { x: 400, y: fromTop(487), size: 6, font: fontBold });
+  // ===== KOTAK DIISI OLEH CUSTOMER =====
+  page.drawText('DIISI OLEH CUSTOMER', { x: CUSTOMER_BOX.left + 10, y: fromTop(470), size: 8, font: fontBold });
+  page.drawText('Berilah tanda pada kotak dimaksud :', { x: CUSTOMER_BOX.left + 10, y: fromTop(481), size: 7, font: fontBold });
+  page.drawText('HASIL PEKERJAAN UT :', { x: CUSTOMER_BOX.left + 10, y: fromTop(490.5), size: 7, font: fontBold });
 
-  drawCheckbox(page, font, 'Memuaskan', c.customerCheckbox.memuaskanX, c.customerCheckbox.memuaskanTop, bapp.hasil_pekerjaan === 'memuaskan');
-  drawCheckbox(page, font, 'Tidak Memuaskan', c.customerCheckbox.tidakMemuaskanX, c.customerCheckbox.tidakMemuaskanTop, bapp.hasil_pekerjaan === 'tidak_memuaskan');
-  drawCheckbox(page, font, 'Selesai', c.customerCheckbox.selesaiX, c.customerCheckbox.selesaiTop, bapp.status_pekerjaan === 'selesai');
-  drawCheckbox(page, font, 'Tidak Selesai', c.customerCheckbox.tidakSelesaiX, c.customerCheckbox.tidakSelesaiTop, bapp.status_pekerjaan === 'tidak_selesai');
+  drawCheckbox(page, fontBold, 'Memuaskan', CUSTOMER_BOX.left + 10, 500, bapp.hasil_pekerjaan === 'memuaskan');
+  drawCheckbox(page, fontBold, 'Tidak Memuaskan', CUSTOMER_BOX.left + 100, 500, bapp.hasil_pekerjaan === 'tidak_memuaskan');
+  drawCheckbox(page, fontBold, 'Selesai', CUSTOMER_BOX.left + 10, 523, bapp.status_pekerjaan === 'selesai');
+  drawCheckbox(page, fontBold, 'Tidak Selesai', CUSTOMER_BOX.left + 100, 523, bapp.status_pekerjaan === 'tidak_selesai');
 
-  page.drawText('Catatan diisi Mekanik UT :', { x: 23, y: fromTop(543), size: 8, font: fontBold });
-  page.drawText((bapp.catatan_mekanik ?? '').slice(0, 100), { x: c.catatan.mekanikX, y: fromTop(c.catatan.mekanikTop), size: 8, font });
+  // ===== CATATAN =====
+  page.drawText('Catatan diisi Mekanik UT :', { x: 23, y: fromTop(551), size: 8, font: fontBold });
+  page.drawText((bapp.catatan_mekanik ?? '').slice(0, 100), { x: 30, y: fromTop(570), size: 8, font });
 
-  page.drawText('Catatan diisi Customer :', { x: 23, y: fromTop(662), size: 8, font: fontBold });
-  page.drawText((bapp.catatan_customer ?? '').slice(0, 100), { x: c.catatan.customerX, y: fromTop(c.catatan.customerTop), size: 8, font });
+  page.drawText('Catatan diisi Customer :', { x: 23, y: fromTop(669.6), size: 8, font: fontBold });
+  page.drawText((bapp.catatan_customer ?? '').slice(0, 100), { x: 30, y: fromTop(690), size: 8, font });
 
-  page.drawText('PT. UNITED TRACTORS Tbk.', { x: 400, y: fromTop(809), size: 8, font: fontBold });
+  // ===== TANDA TANGAN (simetris/mirror kiri-kanan) =====
+  const titleLW = 150;
+  centeredText(page, font, bapp.nama_customer ?? '', CUST_HALF_CENTER - titleLW / 2, CUST_HALF_CENTER + titleLW / 2, 801.6, 8);
+  centeredText(page, fontBold, 'PT. UNITED TRACTORS Tbk.', MEK_HALF_CENTER - titleLW / 2, MEK_HALF_CENTER + titleLW / 2, 801.6, 8);
+  hLine(page, CUST_HALF_CENTER - titleLW / 2, CUST_HALF_CENTER + titleLW / 2, 804.5);
+  hLine(page, MEK_HALF_CENTER - titleLW / 2, MEK_HALF_CENTER + titleLW / 2, 804.5);
 
+  const sigW = 100;
+  const sigH = 55;
+  if (bapp.signature_customer_url) {
+    try {
+      const bytes = await fetchImageBytes(bapp.signature_customer_url);
+      const img = await pdfDoc.embedPng(bytes);
+      page.drawImage(img, { x: CUST_HALF_CENTER - sigW / 2, y: fromTop(865), width: sigW, height: sigH });
+    } catch (err) {
+      console.error('Gagal ambil signature customer:', err);
+    }
+  }
   if (bapp.signature_mekanik_url) {
     try {
       const bytes = await fetchImageBytes(bapp.signature_mekanik_url);
       const img = await pdfDoc.embedPng(bytes);
-      page.drawImage(img, { x: c.signature.mekanikX, y: fromTop(870), width: c.signature.width, height: c.signature.height });
+      page.drawImage(img, { x: MEK_HALF_CENTER - sigW / 2, y: fromTop(865), width: sigW, height: sigH });
     } catch (err) {
       console.error('Gagal ambil signature mekanik:', err);
     }
   }
 
-  if (bapp.signature_customer_url) {
-    try {
-      const bytes = await fetchImageBytes(bapp.signature_customer_url);
-      const img = await pdfDoc.embedPng(bytes);
-      page.drawImage(img, { x: c.signature.customerX, y: fromTop(870), width: c.signature.width, height: c.signature.height });
-    } catch (err) {
-      console.error('Gagal ambil signature customer:', err);
-    }
-  }
+  centeredText(page, font, bapp.nama_customer_ttd ?? '', SIGN_AREA.left, SIGN_AREA.mid, 872, 8);
+  centeredText(page, font, bapp.namaMekanik ?? '', SIGN_AREA.mid, SIGN_AREA.right, 872, 8);
 
-  // Nama tertulis di ATAS garis TTD (bukan di posisi label CUSTOMER/MEKANIK)
-  centeredText(page, font, bapp.nama_customer_ttd ?? '', 90, 240, 875, 8);
-  centeredText(page, font, bapp.namaMekanik ?? '', 400, 550, 875, 8);
+  const ulW = 150;
+  hLine(page, CUST_HALF_CENTER - ulW / 2, CUST_HALF_CENTER + ulW / 2, 878);
+  hLine(page, MEK_HALF_CENTER - ulW / 2, MEK_HALF_CENTER + ulW / 2, 878);
 
-  // Garis TTD di top=878 (sudah digambar di drawAllTables). Label CUSTOMER/MEKANIK di bawah garis.
-  centeredText(page, fontBold, 'CUSTOMER', 90, 240, 894, 8);
-  centeredText(page, fontBold, 'MEKANIK', 400, 550, 894, 8);
+  centeredText(page, fontBold, 'CUSTOMER', SIGN_AREA.left, SIGN_AREA.mid, 891, 8);
+  centeredText(page, fontBold, 'MEKANIK', SIGN_AREA.mid, SIGN_AREA.right, 891, 8);
 
   return pdfDoc.save();
 }
@@ -326,14 +368,11 @@ export async function generateAndUploadBappPdf(bappId: string): Promise<string> 
   const filePath = bapp.mekanik_id + '/bapp-' + bapp.id + '.pdf';
 
   const { error: uploadError } = await supabaseAdmin.storage.from('pdf-hasil').upload(filePath, pdfBytes, { contentType: 'application/pdf', upsert: true });
-
   if (uploadError) throw uploadError;
 
   const { data: urlData, error: urlError } = await supabaseAdmin.storage.from('pdf-hasil').createSignedUrl(filePath, 60 * 60 * 24 * 7);
-
   if (urlError || !urlData) throw urlError ?? new Error('Gagal membuat signed URL');
 
   await supabaseAdmin.from('bapp').update({ pdf_url: urlData.signedUrl }).eq('id', bapp.id);
-
   return urlData.signedUrl;
 }
