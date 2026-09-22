@@ -10,15 +10,34 @@ interface JobDescRow {
   remarks: string;
 }
 
+interface WaktuProses {
+  cust_request_at: string;
+  mech_sent_at: string;
+  start_diagnose_at: string;
+  start_waiting_at: string;
+  start_job_at: string;
+  finish_job_at: string;
+}
+
 interface JobDescTableProps {
   bappId: string;
   initialRows?: JobDescRow[];
+  initialWaktu?: Partial<WaktuProses>;
 }
 
 const MAX_ROWS = 10;
 const EMPTY_ROW: JobDescRow = { component: '', job_desc: '', remarks: '' };
 
-export default function JobDescTable({ bappId, initialRows }: JobDescTableProps) {
+const WAKTU_FIELDS: { key: keyof WaktuProses; label: string }[] = [
+  { key: 'cust_request_at', label: 'Cust Request' },
+  { key: 'mech_sent_at', label: 'Mech Sent' },
+  { key: 'start_diagnose_at', label: 'Start Diagnose' },
+  { key: 'start_waiting_at', label: 'Start Waiting' },
+  { key: 'start_job_at', label: 'Start Job' },
+  { key: 'finish_job_at', label: 'Finish Job' },
+];
+
+export default function JobDescTable({ bappId, initialRows, initialWaktu }: JobDescTableProps) {
   const router = useRouter();
   const supabase = createBrowserClient();
 
@@ -27,6 +46,14 @@ export default function JobDescTable({ bappId, initialRows }: JobDescTableProps)
   );
   const [kondisiUnit, setKondisiUnit] = useState<'baik' | 'tidak_baik'>('baik');
   const [kesiapanUnit, setKesiapanUnit] = useState<'siap' | 'tidak_siap'>('siap');
+  const [waktu, setWaktu] = useState<WaktuProses>({
+    cust_request_at: initialWaktu?.cust_request_at ?? '',
+    mech_sent_at: initialWaktu?.mech_sent_at ?? '',
+    start_diagnose_at: initialWaktu?.start_diagnose_at ?? '',
+    start_waiting_at: initialWaktu?.start_waiting_at ?? '',
+    start_job_at: initialWaktu?.start_job_at ?? '',
+    finish_job_at: initialWaktu?.finish_job_at ?? '',
+  });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -36,6 +63,10 @@ export default function JobDescTable({ bappId, initialRows }: JobDescTableProps)
       next[index] = { ...next[index], [field]: value };
       return next;
     });
+  }
+
+  function updateWaktu(key: keyof WaktuProses, value: string) {
+    setWaktu((prev) => ({ ...prev, [key]: value }));
   }
 
   function addRow() {
@@ -60,7 +91,6 @@ export default function JobDescTable({ bappId, initialRows }: JobDescTableProps)
         return;
       }
 
-      // Hapus dulu job desc lama untuk BAPP ini, lalu insert ulang (cara paling sederhana untuk sinkronisasi baris dinamis)
       const { error: deleteError } = await supabase
         .from('bapp_job_desc')
         .delete()
@@ -82,15 +112,20 @@ export default function JobDescTable({ bappId, initialRows }: JobDescTableProps)
         if (insertError) throw insertError;
       }
 
+      const waktuPayload: Record<string, string | null> = {};
+      WAKTU_FIELDS.forEach(({ key }) => {
+        waktuPayload[key] = waktu[key] ? new Date(waktu[key]).toISOString() : null;
+      });
+
       const { error: updateError } = await supabase
         .from('bapp')
-        .update({ kondisi_unit: kondisiUnit, kesiapan_unit: kesiapanUnit })
+        .update({ kondisi_unit: kondisiUnit, kesiapan_unit: kesiapanUnit, ...waktuPayload })
         .eq('id', bappId);
 
       if (updateError) throw updateError;
 
       if (goToPreview) {
-        router.push(`/bapp/${bappId}/preview`);
+        router.push('/bapp/' + bappId + '/preview');
       } else {
         router.push('/dashboard');
       }
@@ -179,6 +214,22 @@ export default function JobDescTable({ bappId, initialRows }: JobDescTableProps)
           label="Tidak siap"
           onClick={() => setKesiapanUnit('tidak_siap')}
         />
+      </div>
+
+      <p className="mt-4 text-sm font-medium">Waktu proses</p>
+      <p className="-mt-2 text-xs text-gray-500">Isi tanggal &amp; jam tiap tahapan (opsional, boleh dikosongkan)</p>
+      <div className="flex flex-col gap-2">
+        {WAKTU_FIELDS.map(({ key, label }) => (
+          <div key={key} className="flex items-center gap-3">
+            <span className="w-28 shrink-0 text-xs text-gray-600">{label}</span>
+            <input
+              type="datetime-local"
+              value={waktu[key]}
+              onChange={(e) => updateWaktu(key, e.target.value)}
+              className="flex-1 rounded-lg border px-2 py-1.5 text-xs"
+            />
+          </div>
+        ))}
       </div>
 
       {error && <p className="text-xs text-red-600">{error}</p>}
