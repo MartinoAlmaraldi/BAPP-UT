@@ -211,7 +211,7 @@ export async function generateBappPdf(bapp: BappData): Promise<Uint8Array> {
   );
   writeSeq(
     [
-      { text: 'TRACTORS Tbk. kepada ', bold: true },
+      { text: 'TRACTORS Tbk. kepada  ', bold: true },
       { text: bapp.nama_customer ?? '......................................................................................................................', bold: false },
       { text: ' sebagai berikut :', bold: true },
     ],
