@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import './globals.css';
+import '@/styles/theme.css';
 
 export const metadata: Metadata = {
   title: 'BAPP Digital - PT United Tractors',

@@ -1,0 +1,26 @@
+.auth-header {
+  position: relative;
+  height: 212px;
+  color: var(--color-primary);
+}
+
+.auth-header__wave {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.auth-header__back {
+  position: absolute;
+  top: 56px;
+  left: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: #111111;
+  text-decoration: none;
+}
