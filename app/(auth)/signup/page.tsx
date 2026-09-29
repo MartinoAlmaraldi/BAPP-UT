@@ -6,16 +6,18 @@ import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase/client';
 import AuthHeader from '@/components/auth/AuthHeader';
 import PasswordField from '@/components/auth/PasswordField';
-import { MailIcon } from '@/components/auth/AuthIcons';
+import { UserIcon, MailIcon, ShieldIcon } from '@/components/auth/AuthIcons';
 import '@/styles/pages/auth.css';
 import '@/styles/components/auth/field.css';
 
-export default function LoginPage() {
+export default function SignUpPage() {
   const router = useRouter();
   const supabase = createBrowserClient();
 
-  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
   const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
+  const [nrp, setNrp] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -25,25 +27,17 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+      const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
+        options: { data: { name, nrp } },
       });
+      if (signUpError) throw signUpError;
 
-      if (signInError) {
-        if (signInError.message.includes('Email not confirmed')) {
-          throw new Error('Email belum dikonfirmasi. Silakan cek inbox/spam email Anda.');
-        }
-        throw new Error('Email atau password salah.');
-      }
+      // Frame 4 meminta user "Silakan Log In", jadi session otomatis dibuang dulu.
+      await supabase.auth.signOut();
 
-      const { data: profile } = await supabase
-        .from('users')
-        .select('role')
-        .eq('id', data.user!.id)
-        .single();
-
-      router.push(profile?.role === 'admin' ? '/admin/dashboard' : '/dashboard');
+      router.push('/signup/success');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Terjadi kesalahan, coba lagi.');
     } finally {
@@ -56,9 +50,26 @@ export default function LoginPage() {
       <AuthHeader backHref="/" />
 
       <main className="auth">
-        <h1 className="auth__title">Log In</h1>
+        <h1 className="auth__title">Sign Up</h1>
 
         <form className="auth__form" onSubmit={handleSubmit}>
+          <div className="field">
+            <span className="field__icon">
+              <UserIcon />
+            </span>
+            <input
+              className="field__input"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Nama"
+              required
+              autoComplete="name"
+            />
+          </div>
+
+          <PasswordField value={password} onChange={setPassword} />
+
           <div className="field">
             <span className="field__icon">
               <MailIcon />
@@ -74,21 +85,30 @@ export default function LoginPage() {
             />
           </div>
 
-          <PasswordField value={password} onChange={setPassword} />
-
-          <Link href="/forgot-password" className="auth__forgot">
-            Lupa password?
-          </Link>
+          <div className="field">
+            <span className="field__icon">
+              <ShieldIcon />
+            </span>
+            <input
+              className="field__input"
+              type="text"
+              inputMode="numeric"
+              value={nrp}
+              onChange={(e) => setNrp(e.target.value)}
+              placeholder="NRP"
+              required
+            />
+          </div>
 
           {error && <p className="auth__message auth__message--error">{error}</p>}
 
           <button type="submit" className="btn btn-primary auth__submit" disabled={loading}>
-            {loading ? 'Memproses...' : 'Log In'}
+            {loading ? 'Memproses...' : 'Sign Up'}
           </button>
         </form>
 
         <p className="auth__switch">
-          Belum punya akun? <Link href="/signup">Sign Up</Link>
+          Sudah punya akun? <Link href="/login">Log In</Link>
         </p>
       </main>
     </div>

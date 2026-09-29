@@ -1,0 +1,81 @@
+:root {
+  --color-primary: #ffc93c;
+  --color-primary-light: #ffd76f;
+  --color-text: #000000;
+  --color-muted: #9a9a9a;
+  --color-line: #c1c1c1;
+  --color-link: #3b3bff;
+  --color-error: #d92d20;
+  --color-success: #12805c;
+
+  --radius-button: 16px;
+  --page-padding-x: 40px;
+  --content-max-width: 480px;
+  --wide-max-width: 1040px;
+}
+
+/* Kerangka semua halaman: selalu selebar layar */
+.app-shell {
+  width: 100%;
+  min-height: 100vh;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Kolom isi di tengah. Pakai di halaman berikutnya untuk konten utama. */
+.page-container {
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding-left: var(--page-padding-x);
+  padding-right: var(--page-padding-x);
+}
+
+/* Versi lebar untuk dashboard, tabel, dan halaman admin */
+.page-container--wide {
+  max-width: var(--wide-max-width);
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 54px;
+  border: none;
+  border-radius: var(--radius-button);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+}
+
+.btn-secondary {
+  background: var(--color-primary-light);
+  font-weight: 500;
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+  :root {
+    --page-padding-x: 48px;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  :root {
+    --page-padding-x: 64px;
+  }
+}

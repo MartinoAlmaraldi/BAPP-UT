@@ -105,6 +105,128 @@ function rightText(page: PDFPage, font: PDFFont, text: string, xRight: number, t
   page.drawText(text, { x: xRight - w, y: fromTop(top), size, font });
 }
 
+// ===== HELPER TEKS: kecilkan, bungkus baris, atau potong supaya tidak keluar dari sel =====
+function fitFontSize(font: PDFFont, text: string, maxWidth: number, maxSize: number, minSize: number): number {
+  let size = maxSize;
+  while (size > minSize && font.widthOfTextAtSize(text, size) > maxWidth) size -= 0.25;
+  return size;
+}
+
+function truncateToWidth(font: PDFFont, text: string, maxWidth: number, size: number): string {
+  if (font.widthOfTextAtSize(text, size) <= maxWidth) return text;
+  let t = text;
+  while (t.length > 0 && font.widthOfTextAtSize(t + '...', size) > maxWidth) t = t.slice(0, -1);
+  return t + '...';
+}
+
+function wrapLines(font: PDFFont, text: string, maxWidth: number, size: number): string[] {
+  const lines: string[] = [];
+  for (const paragraph of text.split(/\r?\n/)) {
+    let line = '';
+    for (const word of paragraph.split(/\s+/).filter(Boolean)) {
+      const test = line ? line + ' ' + word : word;
+      if (font.widthOfTextAtSize(test, size) <= maxWidth) {
+        line = test;
+        continue;
+      }
+      if (line) {
+        lines.push(line);
+        line = '';
+      }
+      // kata tunggal yang lebih lebar dari kolom: potong per huruf
+      let chunk = '';
+      for (const ch of word) {
+        if (chunk && font.widthOfTextAtSize(chunk + ch, size) > maxWidth) {
+          lines.push(chunk);
+          chunk = ch;
+        } else {
+          chunk += ch;
+        }
+      }
+      line = chunk;
+    }
+    lines.push(line);
+  }
+  return lines;
+}
+
+// Teks di dalam sel tabel: 1 baris (mengecil otomatis), atau maksimal 2 baris kalau masih kepanjangan
+function drawCellText(
+  page: PDFPage,
+  font: PDFFont,
+  text: string | null,
+  left: number,
+  right: number,
+  top: number,
+  bottom: number
+) {
+  const value = (text ?? '').trim();
+  if (!value) return;
+
+  const maxW = right - left - 8;
+  const centerTop = (top + bottom) / 2;
+
+  const single = fitFontSize(font, value, maxW, 8, 6.5);
+  if (font.widthOfTextAtSize(value, single) <= maxW) {
+    page.drawText(value, { x: left + 4, y: fromTop(centerTop + single * 0.35), size: single, font });
+    return;
+  }
+
+  const size = 6;
+  const lineH = 7;
+  let lines = wrapLines(font, value, maxW, size);
+  if (lines.length > 2) {
+    lines = [lines[0], truncateToWidth(font, lines.slice(1).join(' '), maxW, size)];
+  }
+  lines.forEach((line, i) => {
+    const offset = (i - (lines.length - 1) / 2) * lineH;
+    page.drawText(line, { x: left + 4, y: fromTop(centerTop + size * 0.35 + offset), size, font });
+  });
+}
+
+// Teks rata tengah yang mengecil otomatis kalau lebih lebar dari areanya
+function centeredFitted(
+  page: PDFPage,
+  font: PDFFont,
+  text: string,
+  x1: number,
+  x2: number,
+  top: number,
+  maxSize = 8,
+  minSize = 5.5
+) {
+  if (!text) return;
+  const maxW = x2 - x1 - 4;
+  const size = fitFontSize(font, text, maxW, maxSize, minSize);
+  centeredText(page, font, truncateToWidth(font, text, maxW, size), x1, x2, top, size);
+}
+
+// Paragraf beberapa baris di dalam kotak (untuk catatan)
+function drawWrapped(
+  page: PDFPage,
+  font: PDFFont,
+  text: string | null,
+  x: number,
+  topFirstLine: number,
+  maxWidth: number,
+  size: number,
+  lineHeight: number,
+  maxLines: number
+) {
+  const value = (text ?? '').trim();
+  if (!value) return;
+  let lines = wrapLines(font, value, maxWidth, size);
+  if (lines.length > maxLines) {
+    lines = [
+      ...lines.slice(0, maxLines - 1),
+      truncateToWidth(font, lines.slice(maxLines - 1).join(' '), maxWidth, size),
+    ];
+  }
+  lines.forEach((line, i) => {
+    page.drawText(line, { x, y: fromTop(topFirstLine + i * lineHeight), size, font });
+  });
+} 
+
 // ===== KOORDINAT PRESISI (hasil ekstraksi langsung dari template F4 asli) =====
 const UNIT_TABLE = {
   left: 23.3, right: 586.4,
@@ -136,12 +258,10 @@ function drawAllTables(page: PDFPage) {
     vLine(page, x, UNIT_TABLE.top2, UNIT_TABLE.bottom)
   );
 
-  // Tabel Job Desc
+    // Tabel Job Desc (garis pemisah antar baris sengaja dihilangkan, hanya header dan bingkai)
   box(page, JOB_DESC_TABLE.left, JOB_DESC_TABLE.top, JOB_DESC_TABLE.right, JOB_DESC_TABLE.bottom);
   hLine(page, JOB_DESC_TABLE.left, JOB_DESC_TABLE.right, JOB_DESC_TABLE.headerBottom);
   JOB_DESC_TABLE.cols.slice(1, -1).forEach((x) => vLine(page, x, JOB_DESC_TABLE.top, JOB_DESC_TABLE.bottom));
-  const jdRowH = (JOB_DESC_TABLE.bottom - JOB_DESC_TABLE.headerBottom) / MAX_JOB_DESC_ROWS;
-  for (let i = 1; i < MAX_JOB_DESC_ROWS; i++) hLine(page, JOB_DESC_TABLE.left, JOB_DESC_TABLE.right, JOB_DESC_TABLE.headerBottom + i * jdRowH);
 
   // Tabel Waktu Proses
   box(page, WAKTU_TABLE.left, WAKTU_TABLE.top, WAKTU_TABLE.right, WAKTU_TABLE.bottom);
@@ -209,10 +329,23 @@ export async function generateBappPdf(bapp: BappData): Promise<Uint8Array> {
     ],
     113.5
   );
+  
+  const namaSegmentMaxW =
+    586.4 -
+    23 -
+    fontBold.widthOfTextAtSize('TRACTORS Tbk. kepada  ', size1) -
+    fontBold.widthOfTextAtSize(' sebagai berikut :', size1);
+  const namaCustomerText = truncateToWidth(
+    font,
+    bapp.nama_customer ?? '......................................................................................................................',
+    namaSegmentMaxW,
+    size1
+  );
+
   writeSeq(
     [
       { text: 'TRACTORS Tbk. kepada  ', bold: true },
-      { text: bapp.nama_customer ?? '......................................................................................................................', bold: false },
+      { text: namaCustomerText, bold: false },
       { text: ' sebagai berikut :', bold: true },
     ],
     128.5
@@ -231,14 +364,17 @@ export async function generateBappPdf(bapp: BappData): Promise<Uint8Array> {
   centeredText(page, fontBold, 'MODEL', UNIT_TABLE.cols.engineModel, UNIT_TABLE.cols.engineSerialNo, 156, 8);
   centeredText(page, fontBold, 'SERIAL NO.', UNIT_TABLE.cols.engineSerialNo, UNIT_TABLE.cols.smr, 156, 8);
 
-  const unitRowY = fromTop((UNIT_TABLE.top3 + UNIT_TABLE.bottom) / 2 + 3);
-  page.drawText(bapp.unit_model ?? '', { x: UNIT_TABLE.cols.model + 4, y: unitRowY, size: 8, font });
-  page.drawText(bapp.unit_serial_no ?? '', { x: UNIT_TABLE.cols.serialNo + 4, y: unitRowY, size: 8, font });
-  page.drawText(bapp.unit_code ?? '', { x: UNIT_TABLE.cols.codeUnit + 4, y: unitRowY, size: 8, font });
-  page.drawText(bapp.engine_model ?? '', { x: UNIT_TABLE.cols.engineModel + 4, y: unitRowY, size: 8, font });
-  page.drawText(bapp.engine_serial_no ?? '', { x: UNIT_TABLE.cols.engineSerialNo + 4, y: unitRowY, size: 8, font });
-  page.drawText(bapp.smr ?? '', { x: UNIT_TABLE.cols.smr + 4, y: unitRowY, size: 8, font });
-  page.drawText(bapp.unit_location ?? '', { x: UNIT_TABLE.cols.location + 4, y: unitRowY, size: 8, font });
+  // Isi baris unit: otomatis mengecil / dibungkus kalau kepanjangan
+  const unitRowTop = UNIT_TABLE.top3;
+  const unitRowBottom = UNIT_TABLE.bottom;
+  const uc = UNIT_TABLE.cols;
+  drawCellText(page, font, bapp.unit_model, uc.model, uc.serialNo, unitRowTop, unitRowBottom);
+  drawCellText(page, font, bapp.unit_serial_no, uc.serialNo, uc.codeUnit, unitRowTop, unitRowBottom);
+  drawCellText(page, font, bapp.unit_code, uc.codeUnit, uc.engineModel, unitRowTop, unitRowBottom);
+  drawCellText(page, font, bapp.engine_model, uc.engineModel, uc.engineSerialNo, unitRowTop, unitRowBottom);
+  drawCellText(page, font, bapp.engine_serial_no, uc.engineSerialNo, uc.smr, unitRowTop, unitRowBottom);
+  drawCellText(page, font, bapp.smr, uc.smr, uc.location, unitRowTop, unitRowBottom);
+  drawCellText(page, font, bapp.unit_location, uc.location, UNIT_TABLE.right, unitRowTop, unitRowBottom);
 
   page.drawText('Pekerjaan yang telah dilakukan pada unit tersebut adalah :', { x: 23, y: fromTop(193.5), size: 8, font });
 
@@ -251,12 +387,13 @@ export async function generateBappPdf(bapp: BappData): Promise<Uint8Array> {
   const jdRowH2 = (JOB_DESC_TABLE.bottom - JOB_DESC_TABLE.headerBottom) / MAX_JOB_DESC_ROWS;
   const sortedJobDesc = [...bapp.job_desc].sort((a, b) => a.urutan - b.urutan).slice(0, MAX_JOB_DESC_ROWS);
   sortedJobDesc.forEach((row, i) => {
-    const rowTop = JOB_DESC_TABLE.headerBottom + i * jdRowH2 + 12.5;
-    const y = fromTop(rowTop);
+    const cellTop = JOB_DESC_TABLE.headerBottom + i * jdRowH2;
+    const cellBottom = cellTop + jdRowH2;
+    const y = fromTop(cellTop + 12.5);
     page.drawText(String(row.urutan), { x: JOB_DESC_TABLE.cols[0] + 8, y, size: 8, font });
-    page.drawText(row.component ?? '', { x: JOB_DESC_TABLE.cols[1] + 5, y, size: 8, font });
-    page.drawText((row.job_desc ?? '').slice(0, 60), { x: JOB_DESC_TABLE.cols[2] + 5, y, size: 8, font });
-    page.drawText(row.remarks ?? '', { x: JOB_DESC_TABLE.cols[3] + 5, y, size: 8, font });
+    drawCellText(page, font, row.component, JOB_DESC_TABLE.cols[1], JOB_DESC_TABLE.cols[2], cellTop, cellBottom);
+    drawCellText(page, font, row.job_desc, JOB_DESC_TABLE.cols[2], JOB_DESC_TABLE.cols[3], cellTop, cellBottom);
+    drawCellText(page, font, row.remarks, JOB_DESC_TABLE.cols[3], JOB_DESC_TABLE.cols[4], cellTop, cellBottom);
   });
 
   // ===== KESIMPULAN (campuran bold & regular) =====
@@ -291,8 +428,8 @@ export async function generateBappPdf(bapp: BappData): Promise<Uint8Array> {
     const rowTop = WAKTU_TABLE.headerBottom + i * WAKTU_TABLE.rowH + 7.5;
     page.drawText(waktuLabels[i], { x: 26, y: fromTop(rowTop), size: 7, font: fontBold });
     const { tanggal, jam } = formatDateTime(value);
-    page.drawText(tanggal, { x: WAKTU_TABLE.colLabel + 8, y: fromTop(rowTop), size: 7, font });
-    page.drawText(jam, { x: WAKTU_TABLE.colTanggal + 8, y: fromTop(rowTop), size: 7, font });
+    centeredText(page, font, tanggal, WAKTU_TABLE.colLabel, WAKTU_TABLE.colTanggal, rowTop, 7);
+    centeredText(page, font, jam, WAKTU_TABLE.colTanggal, WAKTU_TABLE.right, rowTop, 7);
   });
 
   // ===== KOTAK DIISI OLEH CUSTOMER =====
@@ -307,14 +444,14 @@ export async function generateBappPdf(bapp: BappData): Promise<Uint8Array> {
 
   // ===== CATATAN =====
   page.drawText('Catatan diisi Mekanik UT :', { x: 23, y: fromTop(551), size: 8, font: fontBold });
-  page.drawText((bapp.catatan_mekanik ?? '').slice(0, 100), { x: 30, y: fromTop(570), size: 8, font });
+  drawWrapped(page, font, bapp.catatan_mekanik, 30, 570, CATATAN_MEKANIK_BOX.right - 8 - 30, 8, 10.5, 8);
 
   page.drawText('Catatan diisi Customer :', { x: 23, y: fromTop(669.6), size: 8, font: fontBold });
-  page.drawText((bapp.catatan_customer ?? '').slice(0, 100), { x: 30, y: fromTop(690), size: 8, font });
+  drawWrapped(page, font, bapp.catatan_customer, 30, 690, CATATAN_CUSTOMER_BOX.right - 8 - 30, 8, 10.5, 8);
 
   // ===== TANDA TANGAN (simetris/mirror kiri-kanan) =====
   const titleLW = 150;
-  centeredText(page, font, bapp.nama_customer ?? '', CUST_HALF_CENTER - titleLW / 2, CUST_HALF_CENTER + titleLW / 2, 801.6, 8);
+  centeredFitted(page, font, bapp.nama_customer ?? '', CUST_HALF_CENTER - titleLW / 2, CUST_HALF_CENTER + titleLW / 2, 801.6);
   centeredText(page, fontBold, 'PT. UNITED TRACTORS Tbk.', MEK_HALF_CENTER - titleLW / 2, MEK_HALF_CENTER + titleLW / 2, 801.6, 8);
   hLine(page, CUST_HALF_CENTER - titleLW / 2, CUST_HALF_CENTER + titleLW / 2, 804.5);
   hLine(page, MEK_HALF_CENTER - titleLW / 2, MEK_HALF_CENTER + titleLW / 2, 804.5);
@@ -340,8 +477,8 @@ export async function generateBappPdf(bapp: BappData): Promise<Uint8Array> {
     }
   }
 
-  centeredText(page, font, bapp.nama_customer_ttd ?? '', SIGN_AREA.left, SIGN_AREA.mid, 872, 8);
-  centeredText(page, font, bapp.namaMekanik ?? '', SIGN_AREA.mid, SIGN_AREA.right, 872, 8);
+  centeredFitted(page, font, bapp.nama_customer_ttd ?? '', SIGN_AREA.left, SIGN_AREA.mid, 872);
+  centeredFitted(page, font, bapp.namaMekanik ?? '', SIGN_AREA.mid, SIGN_AREA.right, 872);
 
   const ulW = 150;
   hLine(page, CUST_HALF_CENTER - ulW / 2, CUST_HALF_CENTER + ulW / 2, 878);
