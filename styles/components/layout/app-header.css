@@ -1,0 +1,48 @@
+.app-header {
+  width: 100%;
+}
+
+.app-header__inner {
+  width: 100%;
+  max-width: var(--shell-max-width);
+  margin: 0 auto;
+  padding: 0 var(--shell-pad-x);
+}
+
+/* Bar putih: logo UT di kiri, logo ULM dan HIMA di kanan */
+.app-header__brand {
+  height: 49px;
+  background: #ffffff;
+}
+
+.app-header__brand-inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.app-header__logo-ut {
+  display: block;
+  width: auto;
+  height: 20px;
+}
+
+.app-header__partners {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.app-header__partners img {
+  display: block;
+  width: auto;
+  height: 30px;
+}
+
+/* Bar hitam: judul atau sapaan */
+.app-header__bar {
+  background: #000000;
+  color: #ffffff;
+  padding: 14px 0;
+}

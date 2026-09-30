@@ -2,7 +2,12 @@ import Link from 'next/link';
 import { BackIcon } from './AuthIcons';
 import '@/styles/components/auth/auth-header.css';
 
-export default function AuthHeader({ backHref = '/' }: { backHref?: string }) {
+type Props = {
+  backHref?: string;
+  showBack?: boolean;
+};
+
+export default function AuthHeader({ backHref = '/', showBack = true }: Props) {
   return (
     <div className="auth-header">
       <svg
@@ -16,9 +21,11 @@ export default function AuthHeader({ backHref = '/' }: { backHref?: string }) {
           fill="currentColor"
         />
       </svg>
-      <Link href={backHref} className="auth-header__back" aria-label="Kembali">
-        <BackIcon />
-      </Link>
+      {showBack && (
+        <Link href={backHref} className="auth-header__back" aria-label="Kembali">
+          <BackIcon />
+        </Link>
+      )}
     </div>
   );
 }

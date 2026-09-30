@@ -1,0 +1,15 @@
+.status-badge {
+  flex: none;
+  font-size: 13px;
+  color: var(--color-gray-text);
+}
+
+.status-badge--completed {
+  font-weight: 600;
+  color: var(--color-status-done);
+}
+
+.status-badge--reviewed {
+  font-weight: 600;
+  color: #1f3a8a;
+}

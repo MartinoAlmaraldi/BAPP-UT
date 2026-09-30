@@ -1,10 +1,13 @@
 import Image from 'next/image';
 import Link from 'next/link';
+import AuthHeader from '@/components/auth/AuthHeader';
 import '@/styles/pages/signup-success.css';
 
 export default function SignUpSuccessPage() {
   return (
     <div className="app-shell">
+      <AuthHeader showBack={false} />
+
       <main className="success">
         <Image
           className="success__illustration"

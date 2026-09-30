@@ -1,12 +1,18 @@
+import Image from 'next/image';
 import { createServerClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import AppHeader from '@/components/layout/AppHeader';
 import BappCard from '@/components/bapp/BappCard';
 import BottomNav from '@/components/layout/BottomNav';
+import { UserIcon } from '@/components/auth/AuthIcons';
+import '@/styles/pages/dashboard.css';
 
 export default async function DashboardPage() {
   const supabase = await createServerClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
   const { data: profile } = await supabase
@@ -46,43 +52,63 @@ export default async function DashboardPage() {
     .limit(5);
 
   return (
-    <div className="flex min-h-screen flex-col pb-16">
-      <div className="px-4 pt-6">
-        <p className="text-sm text-gray-500">Halo, {profile?.name}</p>
-        <h1 className="text-lg font-medium">Dashboard BAPP</h1>
-      </div>
+    <div className="app-shell">
+      <AppHeader>
+        <div className="greeting">
+          <div>
+            <p className="greeting__hello">Selamat datang,</p>
+            <p className="greeting__name">{profile?.name ?? 'Nama karyawan'}</p>
+          </div>
+          <a href="/profile" className="greeting__avatar" aria-label="Profil">
+            <UserIcon />
+          </a>
+        </div>
+      </AppHeader>
 
-      <div className="grid grid-cols-2 gap-2 px-4 py-4">
-        <SummaryCard label="Draft" value={counts.draft} />
-        <SummaryCard label="Menunggu TTD" value={counts.signedMekanik} />
-        <SummaryCard label="Selesai bulan ini" value={counts.completedThisMonth} />
-        <SummaryCard label="Total BAPP" value={counts.total} />
-      </div>
+      <main className="dashboard">
+        <div className="dashboard__inner">
+          <div className="dashboard__summary">
+            <SummaryCard label="Draft" value={counts.draft} />
+            <SummaryCard label="Menunggu TTD" value={counts.signedMekanik} />
+            <SummaryCard label="Selesai bulan ini" value={counts.completedThisMonth} />
+            <SummaryCard label="Total BAPP" value={counts.total} />
+          </div>
 
-      <div className="px-4">
-        <a
-          href="/bapp/new"
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-black text-sm font-medium text-white"
-        >
-          Buat BAPP baru
-        </a>
-      </div>
+          <a href="/bapp/new" className="btn btn-primary dashboard__create">
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Buat BAPP baru
+          </a>
 
-      <div className="mt-6 flex items-center justify-between px-4">
-        <p className="text-sm font-medium">Terbaru</p>
-        <a href="/history" className="text-xs text-blue-600">
-          Lihat semua
-        </a>
-      </div>
+          <div className="dashboard__recent-head">
+            <p className="dashboard__recent-title">Terbaru</p>
+            <a href="/history" className="dashboard__recent-link">
+              Lihat semua
+            </a>
+          </div>
 
-      <div className="flex flex-col gap-2 px-4 py-2">
-        {recentBapp?.map((bapp) => (
-          <BappCard key={bapp.id} bapp={bapp} />
-        ))}
-        {recentBapp?.length === 0 && (
-          <p className="py-8 text-center text-sm text-gray-400">Belum ada BAPP dibuat</p>
-        )}
-      </div>
+          <div className="dashboard__list">
+            {recentBapp?.map((bapp) => (
+              <BappCard key={bapp.id} bapp={bapp} />
+            ))}
+          </div>
+          {recentBapp?.length === 0 && <p className="dashboard__empty">Belum ada BAPP dibuat</p>}
+        </div>
+
+        <div className="dashboard__footer">
+          <Image src="/moving-as-one.png" alt="Moving as one" width={190} height={56} />
+        </div>
+      </main>
 
       <BottomNav active="dashboard" />
     </div>
@@ -91,9 +117,9 @@ export default async function DashboardPage() {
 
 function SummaryCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg bg-gray-50 p-3">
-      <p className="mb-1 text-xs text-gray-500">{label}</p>
-      <p className="text-xl font-medium">{value}</p>
+    <div className="summary-card">
+      <p className="summary-card__label">{label}</p>
+      <p className="summary-card__value">{value}</p>
     </div>
   );
 }

@@ -7,11 +7,16 @@
   --color-link: #3b3bff;
   --color-error: #d92d20;
   --color-success: #12805c;
+  --color-nav-active: #858fff;
+  --color-status-done: #004d29;
+  --color-gray-text: #7d7d7d;
 
   --radius-button: 16px;
   --page-padding-x: 40px;
   --content-max-width: 480px;
   --wide-max-width: 1040px;
+  --shell-pad-x: 24px;
+  --shell-max-width: 1040px;
 }
 
 /* Kerangka semua halaman: selalu selebar layar */
@@ -70,6 +75,7 @@
 @media (min-width: 768px) {
   :root {
     --page-padding-x: 48px;
+    --shell-pad-x: 40px;
   }
 }
 
@@ -77,5 +83,6 @@
 @media (min-width: 1024px) {
   :root {
     --page-padding-x: 64px;
+    --shell-pad-x: 64px;
   }
 }

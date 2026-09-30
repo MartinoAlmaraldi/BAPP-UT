@@ -1,4 +1,5 @@
 import StatusBadge from './StatusBadge';
+import '@/styles/components/bapp/bapp-card.css';
 
 interface BappCardProps {
   bapp: {
@@ -12,16 +13,19 @@ interface BappCardProps {
 
 export default function BappCard({ bapp }: BappCardProps) {
   const href = getHrefByStatus(bapp.id, bapp.status);
+  const tanggal = new Date(bapp.created_at).toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
 
   return (
-    <a href={href} className="flex items-center justify-between rounded-lg border p-3">
+    <a href={href} className="bapp-card">
       <div>
-        <p className="text-sm font-medium">
-          {bapp.unit_model ?? '(belum diisi)'} &middot; {bapp.nama_customer ?? '(belum diisi)'}
+        <p className="bapp-card__title">
+          {bapp.unit_model ?? '(belum diisi)'} &bull; {bapp.nama_customer ?? '(belum diisi)'}
         </p>
-        <p className="mt-0.5 text-xs text-gray-500">
-          {new Date(bapp.created_at).toLocaleDateString('id-ID')}
-        </p>
+        <p className="bapp-card__date">{tanggal}</p>
       </div>
       <StatusBadge status={bapp.status} />
     </a>

@@ -66,8 +66,9 @@ export function EyeIcon(p: IconProps) {
 export function EyeOffIcon(p: IconProps) {
   return (
     <Svg {...p}>
-      <path d="M2 12s3.6-7 10-7c2 0 3.7.7 5.2 1.6M22 12s-3.6 7-10 7c-2 0-3.7-.7-5.2-1.6" />
-      <path d="M3 3l18 18" />
+      <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" />
+      <circle cx="12" cy="12" r="3" />
+      <line x1="4" y1="4" x2="20" y2="20" />
     </Svg>
   );
 }

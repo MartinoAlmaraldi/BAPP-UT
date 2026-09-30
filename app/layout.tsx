@@ -7,13 +7,18 @@ export const metadata: Metadata = {
   description: 'Aplikasi digital Berita Acara Penyerahan Pekerjaan',
 };
 
+const sidebarInit = `try{if(localStorage.getItem('bapp-sidebar-open')==='false'){document.documentElement.dataset.sidebar='closed'}}catch(e){}`;
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id">
+    <html lang="id" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: sidebarInit }} />
+      </head>
       <body>{children}</body>
     </html>
   );
