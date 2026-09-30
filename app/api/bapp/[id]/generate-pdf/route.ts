@@ -1,8 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createServerClient } from '@/lib/supabase/server';
 import { generateAndUploadBappPdf } from '@/lib/pdf/generateBappPdf';
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Tidak terautentikasi' }, { status: 401 });
+  }
+
+  // Pakai client user (bukan service role): RLS hanya mengizinkan pemilik BAPP atau admin
+  const { data: bapp } = await supabase.from('bapp').select('id').eq('id', id).single();
+  if (!bapp) {
+    return NextResponse.json({ error: 'BAPP tidak ditemukan' }, { status: 404 });
+  }
 
   try {
     const pdfUrl = await generateAndUploadBappPdf(id);

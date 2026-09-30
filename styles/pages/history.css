@@ -1,0 +1,147 @@
+/* Judul dan kolom cari di bar hitam */
+.history__title {
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.history__search {
+  margin: 14px 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.history__search-btn {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.history__search-input {
+  flex: 1;
+  min-width: 0;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+  background: #ffffff;
+  outline: none;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.history__search-input::placeholder {
+  color: #b5b5b5;
+}
+
+.history__search-input:focus {
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+/* Isi halaman */
+.history {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 110px;
+}
+
+.history__inner {
+  width: 100%;
+  max-width: var(--shell-max-width);
+  margin: 0 auto;
+  padding: 0 var(--shell-pad-x);
+}
+
+/* Pil filter */
+.history__filters {
+  margin-top: 20px;
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.history__filters::-webkit-scrollbar {
+  display: none;
+}
+
+.filter-pill {
+  flex: none;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: #000000;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.filter-pill--active {
+  color: var(--color-primary);
+}
+
+/* Daftar */
+.history__list {
+  margin-top: 20px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 9px;
+}
+
+.history__empty {
+  padding: 32px 0;
+  text-align: center;
+  font-size: 14px;
+  color: #9a9a9a;
+}
+
+/* Logo di dasar halaman */
+.history__footer {
+  margin-top: auto;
+  padding-top: 40px;
+  display: flex;
+  justify-content: center;
+}
+
+.history__footer img {
+  display: block;
+  width: auto;
+  height: 22px;
+}
+
+/* Tablet */
+@media (min-width: 768px) {
+  .history__footer img {
+    height: 28px;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .history {
+    padding-bottom: 40px;
+  }
+
+  .history__title {
+    font-size: 24px;
+  }
+
+  .history__list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .history__footer img {
+    height: 36px;
+  }
+}
