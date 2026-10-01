@@ -48,6 +48,17 @@ export function ProfileNavIcon(p: IconProps) {
   );
 }
 
+export function UsersNavIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <circle cx="9.5" cy="9" r="3.5" />
+      <path d="M2.5 21c0-3.9 3.1-7 7-7s7 3.1 7 7" />
+      <circle cx="18" cy="9.5" r="2.5" />
+      <path d="M18.5 14.2c2.3.4 4 2.4 4 4.8" />
+    </Svg>
+  );
+}
+
 export function MenuIcon(p: IconProps) {
   return (
     <Svg {...p}>

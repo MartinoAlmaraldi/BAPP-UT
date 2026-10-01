@@ -9,10 +9,14 @@ interface BappCardProps {
     status: string;
     created_at: string;
   };
+  /** Tujuan link. Kalau kosong, ditentukan dari status (alur mekanik). */
+  href?: string;
+  /** Teks tambahan sebelum tanggal, misalnya nama mekanik (dipakai admin). */
+  by?: string;
 }
 
-export default function BappCard({ bapp }: BappCardProps) {
-  const href = getHrefByStatus(bapp.id, bapp.status);
+export default function BappCard({ bapp, href, by }: BappCardProps) {
+  const link = href ?? getHrefByStatus(bapp.id, bapp.status);
   const tanggal = new Date(bapp.created_at).toLocaleDateString('id-ID', {
     day: 'numeric',
     month: 'short',
@@ -20,12 +24,12 @@ export default function BappCard({ bapp }: BappCardProps) {
   });
 
   return (
-    <a href={href} className="bapp-card">
+    <a href={link} className="bapp-card">
       <div>
         <p className="bapp-card__title">
           {bapp.unit_model ?? '(belum diisi)'} &bull; {bapp.nama_customer ?? '(belum diisi)'}
         </p>
-        <p className="bapp-card__date">{tanggal}</p>
+        <p className="bapp-card__date">{by ? `${by} \u2022 ${tanggal}` : tanggal}</p>
       </div>
       <StatusBadge status={bapp.status} />
     </a>

@@ -1,7 +1,10 @@
+import Image from 'next/image';
 import { createServerClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import StatusBadge from '@/components/bapp/StatusBadge';
+import AppHeader from '@/components/layout/AppHeader';
+import BappCard from '@/components/bapp/BappCard';
 import AdminBottomNav from '@/components/layout/AdminBottomNav';
+import '@/styles/pages/admin.css';
 
 export default async function AdminDashboardPage() {
   const supabase = await createServerClient();
@@ -43,46 +46,40 @@ export default async function AdminDashboardPage() {
   const mekanikMap = new Map((mekanikList ?? []).map((m) => [m.id, m.name]));
 
   return (
-    <div className="flex min-h-screen flex-col pb-16">
-      <div className="px-4 pt-6">
-        <p className="text-sm text-gray-500">Admin</p>
-        <h1 className="text-lg font-medium">Semua BAPP</h1>
-      </div>
+    <div className="app-shell">
+      <AppHeader>
+        <p className="admin-bar__label">Admin</p>
+        <p className="admin-bar__title">Semua BAPP</p>
+      </AppHeader>
 
-      <div className="grid grid-cols-2 gap-2 px-4 py-4">
-        <SummaryCard label="Selesai bulan ini" value={counts.completedThisMonth} />
-        <SummaryCard label="Menunggu TTD" value={counts.signedMekanik} />
-        <SummaryCard label="Mekanik aktif" value={counts.mekanikAktif} />
-        <SummaryCard label="Total BAPP" value={counts.total} />
-      </div>
+      <main className="admin">
+        <div className="admin__inner">
+          <div className="admin__summary">
+            <SummaryCard label="Selesai bulan ini" value={counts.completedThisMonth} />
+            <SummaryCard label="Menunggu TTD" value={counts.signedMekanik} />
+            <SummaryCard label="Mekanik aktif" value={counts.mekanikAktif} />
+            <SummaryCard label="Total BAPP" value={counts.total} />
+          </div>
 
-      <div className="mt-2 flex items-center justify-between px-4">
-        <p className="text-sm font-medium">Terbaru</p>
-      </div>
+          <p className="admin__section-title">Terbaru</p>
 
-      <div className="flex flex-col gap-2 px-4 py-2">
-        {recentBapp?.map((bapp) => (
-          <a
-            key={bapp.id}
-            href={'/admin/bapp/' + bapp.id}
-            className="flex items-center justify-between rounded-lg border p-3"
-          >
-            <div>
-              <p className="text-sm font-medium">
-                {bapp.unit_model ?? '(belum diisi)'} &middot; {bapp.nama_customer ?? '(belum diisi)'}
-              </p>
-              <p className="mt-0.5 text-xs text-gray-500">
-                {mekanikMap.get(bapp.mekanik_id) ?? 'Mekanik'} &middot;{' '}
-                {new Date(bapp.created_at).toLocaleDateString('id-ID')}
-              </p>
-            </div>
-            <StatusBadge status={bapp.status} />
-          </a>
-        ))}
-        {recentBapp?.length === 0 && (
-          <p className="py-8 text-center text-sm text-gray-400">Belum ada BAPP dibuat</p>
-        )}
-      </div>
+          <div className="admin__list">
+            {recentBapp?.map((bapp) => (
+              <BappCard
+                key={bapp.id}
+                bapp={bapp}
+                href={'/admin/bapp/' + bapp.id}
+                by={mekanikMap.get(bapp.mekanik_id) ?? 'Mekanik'}
+              />
+            ))}
+          </div>
+          {recentBapp?.length === 0 && <p className="admin__empty">Belum ada BAPP dibuat</p>}
+        </div>
+
+        <div className="admin__footer">
+          <Image src="/moving-as-one.png" alt="Moving as one" width={190} height={56} />
+        </div>
+      </main>
 
       <AdminBottomNav active="dashboard" />
     </div>
@@ -91,9 +88,9 @@ export default async function AdminDashboardPage() {
 
 function SummaryCard({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg bg-gray-50 p-3">
-      <p className="mb-1 text-xs text-gray-500">{label}</p>
-      <p className="text-xl font-medium">{value}</p>
+    <div className="admin-card">
+      <p className="admin-card__label">{label}</p>
+      <p className="admin-card__value">{value}</p>
     </div>
   );
 }

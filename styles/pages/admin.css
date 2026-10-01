@@ -1,0 +1,299 @@
+/* ===== Bar hitam di header ===== */
+.admin-bar__label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.admin-bar__title {
+  margin-top: 2px;
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.admin-bar--back {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.admin-bar--back .admin-bar__title {
+  margin-top: 0;
+  font-size: 20px;
+}
+
+.admin-bar__back {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+/* ===== Kerangka isi ===== */
+.admin {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 110px;
+}
+
+.admin__inner {
+  width: 100%;
+  max-width: var(--shell-max-width);
+  margin: 0 auto;
+  padding: 0 var(--shell-pad-x);
+}
+
+.admin__inner--narrow {
+  max-width: 760px;
+}
+
+/* ===== Kartu ringkasan ===== */
+.admin__summary {
+  margin-top: 32px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.admin-card {
+  padding: 16px 18px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.admin-card__label {
+  font-size: 13px;
+  color: var(--color-gray-text);
+}
+
+.admin-card__value {
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 500;
+}
+
+/* ===== Daftar ===== */
+.admin__section-title {
+  margin-top: 28px;
+  font-size: 13px;
+  color: var(--color-gray-text);
+}
+
+.admin__list {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 9px;
+}
+
+.admin__list--users {
+  margin-top: 24px;
+}
+
+.admin__empty {
+  padding: 32px 0;
+  text-align: center;
+  font-size: 14px;
+  color: #9a9a9a;
+}
+
+.admin__note {
+  margin-top: 24px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #9a9a9a;
+}
+
+/* ===== Kartu user (halaman kelola mekanik) ===== */
+.user-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.user-card__name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.user-card__email {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-gray-text);
+  word-break: break-all;
+}
+
+.user-card__count {
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--color-gray-text);
+}
+
+.role-badge {
+  flex: none;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #f0f0f0;
+  color: var(--color-gray-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.role-badge--admin {
+  background: var(--color-primary-light);
+  color: #000000;
+}
+
+/* ===== Detail BAPP ===== */
+.detail-head {
+  margin-top: 24px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.detail-head__title {
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.detail-head__sub {
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--color-gray-text);
+}
+
+.detail-meta {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-gray-text);
+}
+
+.detail-meta strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.detail-card {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: var(--color-gray-text);
+}
+
+.detail-value {
+  margin: 2px 0 14px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.detail-jobs {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid #e5e5e5;
+  display: grid;
+  gap: 8px;
+}
+
+.detail-job {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.detail-job strong {
+  font-weight: 600;
+}
+
+.detail-muted {
+  font-size: 12px;
+  color: #9a9a9a;
+}
+
+.detail-note__title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-gray-text);
+}
+
+.detail-note__text {
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.detail__pdf {
+  margin-top: 24px;
+}
+
+.detail__no-pdf {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: #9a9a9a;
+}
+
+/* ===== Logo di dasar halaman ===== */
+.admin__footer {
+  margin-top: auto;
+  padding-top: 40px;
+  display: flex;
+  justify-content: center;
+}
+
+.admin__footer img {
+  display: block;
+  width: auto;
+  height: 22px;
+}
+
+/* ===== Tablet ===== */
+@media (min-width: 768px) {
+  .admin__summary {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .admin__footer img {
+    height: 28px;
+  }
+}
+
+/* ===== Desktop ===== */
+@media (min-width: 1024px) {
+  .admin {
+    padding-bottom: 40px;
+  }
+
+  .admin-bar__title {
+    font-size: 20px;
+  }
+
+  .admin__list {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .admin__footer img {
+    height: 36px;
+  }
+}
