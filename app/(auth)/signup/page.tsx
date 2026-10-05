@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase/client';
 import AuthHeader from '@/components/auth/AuthHeader';
+import AuthFooter from '@/components/auth/AuthFooter';
 import PasswordField from '@/components/auth/PasswordField';
 import { UserIcon, MailIcon, ShieldIcon } from '@/components/auth/AuthIcons';
 import '@/styles/pages/auth.css';
@@ -111,6 +112,8 @@ export default function SignUpPage() {
           Sudah punya akun? <Link href="/login">Log In</Link>
         </p>
       </main>
+
+      <AuthFooter />
     </div>
   );
 }

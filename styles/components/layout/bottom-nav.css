@@ -56,12 +56,12 @@
 /* Desktop: sidebar di kiri, bisa dilebarkan atau dikecilkan jadi rel ikon */
 @media (min-width: 1024px) {
   /* Geser seluruh isi halaman, apa pun pembungkusnya */
-  body {
+  body:has(.bottom-nav) {
     padding-left: var(--sidebar-width);
     transition: padding-left 0.25s ease;
   }
 
-  html[data-sidebar='closed'] body {
+  html[data-sidebar='closed'] body:has(.bottom-nav) {
     padding-left: var(--sidebar-rail-width);
   }
 

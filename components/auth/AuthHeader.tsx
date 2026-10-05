@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { BackIcon } from './AuthIcons';
 import '@/styles/components/auth/auth-header.css';
@@ -5,9 +6,10 @@ import '@/styles/components/auth/auth-header.css';
 type Props = {
   backHref?: string;
   showBack?: boolean;
+  showLogo?: boolean;
 };
 
-export default function AuthHeader({ backHref = '/', showBack = true }: Props) {
+export default function AuthHeader({ backHref = '/', showBack = true, showLogo = true }: Props) {
   return (
     <div className="auth-header">
       <svg
@@ -21,10 +23,22 @@ export default function AuthHeader({ backHref = '/', showBack = true }: Props) {
           fill="currentColor"
         />
       </svg>
+
       {showBack && (
         <Link href={backHref} className="auth-header__back" aria-label="Kembali">
           <BackIcon />
         </Link>
+      )}
+
+      {showLogo && (
+        <Image
+          className="auth-header__logo"
+          src="/logo-ut.png"
+          alt="United Tractors"
+          width={274}
+          height={55}
+          priority
+        />
       )}
     </div>
   );

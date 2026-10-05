@@ -26,6 +26,15 @@
   text-decoration: none;
 }
 
+/* Logo United Tractors di kanan atas, sejajar tombol kembali */
+.auth-header__logo {
+  position: absolute;
+  top: 58px;
+  right: 24px;
+  width: auto;
+  height: 26px;
+}
+
 @media (min-width: 768px) {
   .auth-header {
     height: 240px;
@@ -34,6 +43,12 @@
   .auth-header__back {
     top: 40px;
     left: 40px;
+  }
+
+  .auth-header__logo {
+    top: 42px;
+    right: 40px;
+    height: 30px;
   }
 }
 
@@ -44,5 +59,10 @@
 
   .auth-header__back {
     left: 64px;
+  }
+
+  .auth-header__logo {
+    right: 64px;
+    height: 34px;
   }
 }

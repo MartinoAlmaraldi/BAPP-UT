@@ -40,6 +40,10 @@
   color: var(--color-success);
 }
 
+.auth__message a {
+  color: var(--color-link);
+}
+
 .auth__submit {
   margin-top: 32px;
 }
@@ -52,4 +56,32 @@
 
 .auth__switch a {
   color: var(--color-link);
+}
+
+.auth__lead {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #555555;
+}
+
+.auth__notice {
+  margin-top: 40px;
+  padding: 16px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: #fafafa;
+  text-align: center;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.auth__notice strong {
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.auth__actions {
+  margin-top: 24px;
 }

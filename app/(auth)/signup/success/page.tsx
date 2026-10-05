@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import AuthHeader from '@/components/auth/AuthHeader';
+import AuthFooter from '@/components/auth/AuthFooter';
 import '@/styles/pages/signup-success.css';
 
 export default function SignUpSuccessPage() {
@@ -25,6 +26,8 @@ export default function SignUpSuccessPage() {
           Log In
         </Link>
       </main>
+
+      <AuthFooter />
     </div>
   );
 }
