@@ -74,3 +74,13 @@ export function CollapseIcon(p: IconProps) {
     </Svg>
   );
 }
+
+export function LogoutIcon(p: IconProps) {
+  return (
+    <Svg {...p}>
+      <path d="M10 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4" />
+      <path d="M16 8l5 5-5 5" />
+      <path d="M21 13H10" />
+    </Svg>
+  );
+}

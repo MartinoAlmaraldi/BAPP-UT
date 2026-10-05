@@ -1,0 +1,153 @@
+.profile-bar__title {
+  font-size: 17px;
+  font-weight: 500;
+}
+
+.profile {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 110px;
+}
+
+.profile__inner {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 var(--shell-pad-x);
+}
+
+/* Kartu identitas */
+.profile-card {
+  margin-top: 32px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.profile-card__avatar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #e8e8e8;
+  color: #111111;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.profile-card__name {
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.profile-card__email {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--color-gray-text);
+  word-break: break-all;
+}
+
+.profile-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: #f0f0f0;
+  color: var(--color-gray-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.profile-badge--admin {
+  background: var(--color-primary-light);
+  color: #000000;
+}
+
+/* Kartu statistik */
+.profile-stat {
+  margin-top: 20px;
+  padding: 16px 20px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.profile-stat__label {
+  font-size: 13px;
+  color: var(--color-gray-text);
+}
+
+.profile-stat__value {
+  margin-top: 6px;
+  font-size: 28px;
+  font-weight: 500;
+}
+
+/* Tombol keluar (mengikuti desain Figma: merah muda, ikon merah) */
+.logout-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 48px;
+  margin-top: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: #ffa5a7;
+  color: #111111;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.logout-btn svg {
+  color: #e5000f;
+}
+
+.logout-btn:hover {
+  background: #ff9295;
+}
+
+/* Logo di dasar halaman */
+.profile__footer {
+  margin-top: auto;
+  padding-top: 40px;
+  display: flex;
+  justify-content: center;
+}
+
+.profile__footer img {
+  display: block;
+  width: auto;
+  height: 22px;
+}
+
+@media (min-width: 768px) {
+  .profile__footer img {
+    height: 28px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .profile {
+    padding-bottom: 40px;
+  }
+
+  .profile-bar__title {
+    font-size: 22px;
+  }
+
+  .profile__footer img {
+    height: 36px;
+  }
+}

@@ -3,6 +3,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import AppHeader from '@/components/layout/AppHeader';
 import BappCard from '@/components/bapp/BappCard';
+import StatusBadge from '@/components/bapp/StatusBadge';
 import AdminBottomNav from '@/components/layout/AdminBottomNav';
 import '@/styles/pages/admin.css';
 
@@ -63,7 +64,8 @@ export default async function AdminDashboardPage() {
 
           <p className="admin__section-title">Terbaru</p>
 
-          <div className="admin__list">
+          {/* Mobile dan tablet: kartu */}
+          <div className="admin__list admin__list--cards">
             {recentBapp?.map((bapp) => (
               <BappCard
                 key={bapp.id}
@@ -73,6 +75,36 @@ export default async function AdminDashboardPage() {
               />
             ))}
           </div>
+
+          {/* Desktop: tabel */}
+          {recentBapp && recentBapp.length > 0 && (
+            <div className="admin-table">
+              <div className="admin-table__head">
+                <span>Unit</span>
+                <span>Customer</span>
+                <span>Mekanik</span>
+                <span>Tanggal</span>
+                <span className="admin-table__status">Status</span>
+              </div>
+              {recentBapp.map((bapp) => (
+                <a key={bapp.id} href={'/admin/bapp/' + bapp.id} className="admin-table__row">
+                  <span className="admin-table__unit">{bapp.unit_model ?? '(belum diisi)'}</span>
+                  <span>{bapp.nama_customer ?? '(belum diisi)'}</span>
+                  <span className="admin-table__muted">{mekanikMap.get(bapp.mekanik_id) ?? 'Mekanik'}</span>
+                  <span className="admin-table__muted">
+                    {new Date(bapp.created_at).toLocaleDateString('id-ID', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </span>
+                  <span className="admin-table__status">
+                    <StatusBadge status={bapp.status} />
+                  </span>
+                </a>
+              ))}
+            </div>
+          )}
           {recentBapp?.length === 0 && <p className="admin__empty">Belum ada BAPP dibuat</p>}
         </div>
 

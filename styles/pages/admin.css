@@ -109,6 +109,11 @@
   color: #9a9a9a;
 }
 
+/* ===== Tabel BAPP terbaru (hanya desktop) ===== */
+.admin-table {
+  display: none;
+}
+
 /* ===== Kartu user (halaman kelola mekanik) ===== */
 .user-card {
   display: flex;
@@ -286,11 +291,103 @@
   }
 
   .admin-bar__title {
-    font-size: 20px;
+    font-size: 22px;
+  }
+
+  .admin__summary {
+    margin-top: 36px;
+    gap: 24px;
+  }
+
+  .admin-card {
+    padding: 22px 26px;
+    border-radius: 8px;
+  }
+
+  .admin-card__label {
+    font-size: 14px;
+  }
+
+  .admin-card__value {
+    margin-top: 8px;
+    font-size: 34px;
+  }
+
+  .admin__section-title {
+    margin-top: 40px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--color-text);
   }
 
   .admin__list {
+    margin-top: 12px;
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .admin__list--users {
+    margin-top: 28px;
+  }
+
+  /* Daftar kartu diganti tabel di desktop */
+  .admin__list--cards {
+    display: none;
+  }
+
+  .admin-table {
+    display: block;
+    margin-top: 12px;
+    border: 1px solid var(--color-line);
+    border-radius: 8px;
+    background: #ffffff;
+    overflow: hidden;
+  }
+
+  .admin-table__head,
+  .admin-table__row {
+    display: grid;
+    grid-template-columns: 1.5fr 1.5fr 1fr 1fr 120px;
+    gap: 16px;
+    align-items: center;
+    padding: 0 24px;
+  }
+
+  .admin-table__head {
+    height: 46px;
+    background: #000000;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .admin-table__row {
+    height: 60px;
+    border-top: 1px solid #ececec;
+    color: var(--color-text);
+    font-size: 14px;
+    text-decoration: none;
+  }
+
+  .admin-table__head + .admin-table__row {
+    border-top: 0;
+  }
+
+  .admin-table__row:hover {
+    background: #fafafa;
+  }
+
+  .admin-table__unit {
+    font-weight: 600;
+  }
+
+  .admin-table__muted {
+    font-size: 13px;
+    color: var(--color-gray-text);
+  }
+
+  .admin-table__status {
+    justify-self: end;
   }
 
   .admin__footer img {
