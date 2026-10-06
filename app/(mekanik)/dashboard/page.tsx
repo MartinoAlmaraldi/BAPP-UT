@@ -17,7 +17,7 @@ export default async function DashboardPage() {
 
   const { data: profile } = await supabase
     .from('users')
-    .select('name, role')
+    .select('name, role, avatar_url')
     .eq('id', user.id)
     .single();
 
@@ -60,7 +60,12 @@ export default async function DashboardPage() {
             <p className="greeting__name">{profile?.name ?? 'Nama karyawan'}</p>
           </div>
           <a href="/profile" className="greeting__avatar" aria-label="Profil">
-            <UserIcon />
+            {profile?.avatar_url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={profile.avatar_url} alt="" />
+            ) : (
+              <UserIcon />
+            )}
           </a>
         </div>
       </AppHeader>

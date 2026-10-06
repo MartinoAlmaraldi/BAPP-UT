@@ -11,21 +11,18 @@ export default async function ProfilePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase.from('users').select('name, email, role').eq('id', user.id).single();
-
-  const { count } = await supabase
-    .from('bapp')
-    .select('*', { count: 'exact', head: true })
-    .eq('mekanik_id', user.id);
+  const { data: profile } = await supabase.from('users').select('name, role, nrp, avatar_url').eq('id', user.id).single();
+  if (profile?.role === 'admin') redirect('/admin/profile');
 
   return (
     <div className="app-shell">
       <ProfileView
         name={profile?.name ?? ''}
-        email={profile?.email ?? ''}
-        role={profile?.role === 'admin' ? 'admin' : 'mekanik'}
-        statLabel="Total BAPP dibuat"
-        statValue={count ?? 0}
+        role="mekanik"
+        nrp={profile?.nrp ?? null}
+        avatarUrl={profile?.avatar_url ?? null}
+        infoHref="/profile/info"
+        securityHref="/profile/security"
       />
       <BottomNav active="profile" />
     </div>
