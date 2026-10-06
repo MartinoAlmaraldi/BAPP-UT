@@ -11,19 +11,18 @@ export default async function AdminProfilePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase.from('users').select('name, email, role').eq('id', user.id).single();
-  if (profile?.role !== 'admin') redirect('/dashboard');
-
-  const { count } = await supabase.from('bapp').select('*', { count: 'exact', head: true });
+  const { data: profile } = await supabase.from('users').select('name, role, nrp, avatar_url').eq('id', user.id).single();
+  if (profile?.role !== 'admin') redirect('/profile');
 
   return (
     <div className="app-shell">
       <ProfileView
         name={profile?.name ?? ''}
-        email={profile?.email ?? ''}
         role="admin"
-        statLabel="Total BAPP (semua mekanik)"
-        statValue={count ?? 0}
+        nrp={profile?.nrp ?? null}
+        avatarUrl={profile?.avatar_url ?? null}
+        infoHref="/admin/profile/info"
+        securityHref="/admin/profile/security"
       />
       <AdminBottomNav active="profile" />
     </div>
