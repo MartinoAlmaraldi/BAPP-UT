@@ -1,5 +1,12 @@
 import { createServerClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
+import FlowHeader from '@/components/flow/FlowHeader';
+import FlowFooter from '@/components/flow/FlowFooter';
+import DoneIllustration from '@/components/bapp/DoneIllustration';
+import ShareButton from '@/components/bapp/ShareButton';
+import GeneratePdfButton from '@/components/bapp/GeneratePdfButton';
+import '@/styles/pages/flow.css';
+import '@/styles/pages/result.css';
 
 export default async function ResultPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -18,41 +25,49 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
 
   if (!bapp) notFound();
 
+  if (bapp.status === 'draft') redirect('/bapp/' + id + '/jobdesc');
+  if (bapp.status === 'signed_mekanik') redirect('/bapp/' + id + '/customer');
+
   return (
-    <div className="flex min-h-screen flex-col items-center px-4 pt-10 text-center">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
-        <span className="text-2xl text-green-600">&#10003;</span>
-      </div>
+    <div className="app-shell">
+      <FlowHeader title="BAPP selesai" />
 
-      <p className="mb-1 text-base font-medium">BAPP selesai</p>
-      <p className="mb-6 text-sm text-gray-500">
-        {bapp.unit_model ?? '-'} &middot; {bapp.nama_customer ?? '-'}
-      </p>
+      <main className="result">
+        <div className="result__inner">
+          <DoneIllustration className="result__illustration" />
 
-      {bapp.pdf_url ? (
-        <div className="mb-6 flex w-full max-w-sm flex-col items-center gap-2 rounded-lg border p-6">
-          <span className="text-sm text-gray-500">PDF sudah tersedia</span>
-          <a
-            href={bapp.pdf_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 flex h-11 w-full items-center justify-center rounded-lg bg-black text-sm font-medium text-white"
-          >
-            Buka / Unduh PDF
+          <h1 className="result__title">BAPP Selesai</h1>
+          <p className="result__sub">
+            {bapp.unit_model ?? '-'} &bull; {bapp.nama_customer ?? '-'}
+          </p>
+
+          {bapp.pdf_url ? (
+            <div className="result-card">
+              <p className="result-card__title">PDF sudah tersedia</p>
+              <a
+                href={bapp.pdf_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="fbtn fbtn--primary fbtn--block"
+              >
+                Download PDF
+              </a>
+              <ShareButton url={bapp.pdf_url} title={'BAPP ' + (bapp.unit_model ?? '')} />
+            </div>
+          ) : (
+            <div className="result-card result-card--empty">
+              <p className="result-card__title">PDF belum dibuat untuk BAPP ini.</p>
+              <GeneratePdfButton bappId={bapp.id} />
+            </div>
+          )}
+
+          <a href="/dashboard" className="fbtn fbtn--block">
+            Kembali ke dashboard
           </a>
         </div>
-      ) : (
-        <div className="mb-6 w-full max-w-sm rounded-lg border border-dashed p-6 text-sm text-gray-400">
-          PDF belum digenerate untuk BAPP ini.
-        </div>
-      )}
 
-      <a
-        href="/dashboard"
-        className="flex h-11 w-full max-w-sm items-center justify-center rounded-lg border text-sm font-medium"
-      >
-        Kembali ke dashboard
-      </a>
+        <FlowFooter />
+      </main>
     </div>
   );
 }

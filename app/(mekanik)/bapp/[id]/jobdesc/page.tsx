@@ -1,6 +1,9 @@
 import { createServerClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
+import FlowHeader from '@/components/flow/FlowHeader';
+import FlowFooter from '@/components/flow/FlowFooter';
 import JobDescTable from '@/components/form/JobDescTable';
+import '@/styles/pages/flow.css';
 
 function toLocalInputValue(iso: string | null): string {
   if (!iso) return '';
@@ -24,12 +27,16 @@ export default async function JobDescPage({ params }: { params: Promise<{ id: st
   const { data: bapp } = await supabase
     .from('bapp')
     .select(
-      'id, cust_request_at, mech_sent_at, start_diagnose_at, start_waiting_at, start_job_at, finish_job_at, job_desc:bapp_job_desc(component, job_desc, remarks, urutan)'
+      'id, status, kondisi_unit, kesiapan_unit, cust_request_at, mech_sent_at, start_diagnose_at, start_waiting_at, start_job_at, finish_job_at, job_desc:bapp_job_desc(component, job_desc, remarks, urutan)'
     )
     .eq('id', id)
     .single();
 
   if (!bapp) notFound();
+
+  // Pekerjaan hanya boleh diubah selama masih draft
+  if (bapp.status === 'signed_mekanik') redirect('/bapp/' + id + '/customer');
+  if (bapp.status !== 'draft') redirect('/bapp/' + id + '/result');
 
   const sortedJobDesc = (bapp.job_desc ?? []).sort((a, b) => a.urutan - b.urutan);
 
@@ -43,20 +50,22 @@ export default async function JobDescPage({ params }: { params: Promise<{ id: st
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <div className="px-4 pt-6">
-        <h1 className="text-lg font-medium">BAPP baru</h1>
-      </div>
+    <div className="app-shell">
+      <FlowHeader title="BAPP baru" backHref={'/bapp/' + bapp.id + '/edit'} step={2} />
 
-      <div className="flex gap-1.5 px-4 py-4">
-        <div className="h-1 flex-1 rounded-full bg-black" />
-        <div className="h-1 flex-1 rounded-full bg-black" />
-        <div className="h-1 flex-1 rounded-full bg-gray-200" />
-      </div>
-
-      <p className="px-4 pb-3 text-xs text-gray-500">Langkah 2 dari 3 &middot; Pekerjaan yang dilakukan</p>
-
-      <JobDescTable bappId={bapp.id} initialRows={sortedJobDesc} initialWaktu={initialWaktu} />
+      <main className="flow">
+        <div className="flow__inner">
+          <p className="flow-step">Langkah 2 dari 3 &bull; Pekerjaan yang dilakukan</p>
+          <JobDescTable
+            bappId={bapp.id}
+            initialRows={sortedJobDesc}
+            initialWaktu={initialWaktu}
+            initialKondisi={bapp.kondisi_unit}
+            initialKesiapan={bapp.kesiapan_unit}
+          />
+        </div>
+        <FlowFooter />
+      </main>
     </div>
   );
 }

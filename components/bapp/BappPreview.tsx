@@ -1,62 +1,82 @@
 import type { BappWithJobDesc } from '@/types/bapp';
+import '@/styles/pages/flow.css';
 
 interface BappPreviewProps {
   bapp: BappWithJobDesc;
 }
 
 export default function BappPreview({ bapp }: BappPreviewProps) {
-  const editHref = '/bapp/' + bapp.id + '/jobdesc';
   const signHref = '/bapp/' + bapp.id + '/sign-mekanik';
 
+  const tanggal = bapp.tanggal_penyerahan
+    ? new Date(bapp.tanggal_penyerahan).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+    : '-';
+
   return (
-    <div className="flex flex-col gap-4 px-4 pb-6">
-      <div className="rounded-lg border p-4">
-        <p className="mb-0.5 text-xs text-gray-500">Customer</p>
-        <p className="mb-3 text-sm font-medium">
-          {bapp.nama_customer ?? '-'} &middot;{' '}
-          {bapp.tanggal_penyerahan
-            ? new Date(bapp.tanggal_penyerahan).toLocaleDateString('id-ID')
-            : '-'}
+    <div className="fform">
+      <div className="pcard">
+        <p className="pcard__label">Customer</p>
+        <p className="pcard__value">
+          {bapp.nama_customer ?? '-'} &bull; {tanggal}
         </p>
 
-        <p className="mb-0.5 text-xs text-gray-500">Unit</p>
-        <p className="mb-3 text-sm">
-          {bapp.unit_model ?? '-'} / {bapp.unit_serial_no ?? '-'} &middot; SMR {bapp.smr ?? '-'}
+        <p className="pcard__label">Unit</p>
+        <p className="pcard__value">
+          {bapp.unit_model ?? '-'} / {bapp.unit_serial_no ?? '-'} &bull; SMR {bapp.smr ?? '-'}
         </p>
 
-        <p className="mb-1.5 text-xs text-gray-500">Pekerjaan ({bapp.job_desc.length})</p>
-        <div className="flex flex-col gap-1.5 border-t pt-2">
-          {bapp.job_desc.length === 0 && (
-            <p className="text-xs text-gray-400">Belum ada pekerjaan diisi</p>
-          )}
-          {bapp.job_desc.map((row) => (
-            <p key={row.id} className="text-sm">
-              <span className="font-medium">{row.component}</span>
-              {row.job_desc ? ' - ' + row.job_desc : ''}
+        <p className="pcard__label">Pekerjaan ({bapp.job_desc.length})</p>
+        <hr className="pcard__rule" />
+        {bapp.job_desc.length === 0 && <p className="pcard__empty">Belum ada pekerjaan diisi</p>}
+        {bapp.job_desc.map((row) => (
+          <div key={row.id} className="pjob">
+            <p className="pjob__title">
+              {row.component}
+              {row.job_desc ? ' \u2022 ' + row.job_desc : ''}
             </p>
-          ))}
-        </div>
+            {row.remarks && <p className="pjob__remarks">{row.remarks}</p>}
+          </div>
+        ))}
       </div>
 
-      <div className="flex items-center gap-2 rounded-lg bg-green-50 px-4 py-3">
-        <span className="text-sm font-medium text-green-700">
-          Kondisi unit: {bapp.kondisi_unit === 'baik' ? 'Baik' : 'Tidak baik'} &middot;{' '}
-          {bapp.kesiapan_unit === 'siap' ? 'Siap operasi' : 'Tidak siap operasi'}
+      <div className="pbanner">
+        <CheckIcon />
+        <span>
+          Kondisi unit: {bapp.kondisi_unit === 'tidak_baik' ? 'Tidak baik' : 'Baik'} &bull;{' '}
+          {bapp.kesiapan_unit === 'tidak_siap' ? 'Tidak siap operasi' : 'Siap operasi'}
         </span>
       </div>
 
-      <div className="rounded-lg bg-blue-50 px-4 py-3 text-xs text-blue-700">
-        Pastikan data sudah benar. Setelah TTD mekanik, data unit dan pekerjaan akan terkunci.
-      </div>
+      <p className="pinfo">
+        <InfoIcon />
+        <span>Pastikan data sudah benar. Setelah tanda tangan mekanik, data unit dan pekerjaan akan terkunci.</span>
+      </p>
 
-      <div className="flex gap-3">
-        <a href={editHref} className="flex h-11 flex-1 items-center justify-center rounded-lg border text-sm font-medium">
-          Edit
+      <div className="factions factions--split">
+        <a href="/dashboard" className="fbtn">
+          Simpan draft
         </a>
-        <a href={signHref} className="flex h-11 flex-1 items-center justify-center rounded-lg bg-black text-sm font-medium text-white">
-          Lanjut TTD
+        <a href={signHref} className="fbtn fbtn--primary">
+          Lanjut tanda tangan
         </a>
       </div>
     </div>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 12.5l4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
+
+function InfoIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5M12 8h.01" />
+    </svg>
   );
 }

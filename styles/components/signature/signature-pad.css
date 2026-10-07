@@ -1,0 +1,54 @@
+.sigpad {
+  display: flex;
+  flex-direction: column;
+}
+
+.sigpad__canvas {
+  display: block;
+  width: 100%;
+  aspect-ratio: 9 / 5;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: #ffffff;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.sigpad__canvas--disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Tombol Ulangi selebar kotak */
+.sigpad__clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 38px;
+  margin-top: 16px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #000000;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Tautan kecil di bawah kotak */
+.sigpad__clear--link {
+  align-self: flex-end;
+  height: auto;
+  margin-top: 6px;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-link);
+  font-size: 12px;
+}
+
+.sigpad__clear:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

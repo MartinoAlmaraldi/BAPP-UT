@@ -1,116 +1,119 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
+import '@/styles/components/signature/signature-pad.css';
 
 interface SignaturePadProps {
-  onSave: (dataUrl: string) => void;
+  /** Dipanggil setiap selesai satu goresan (berisi gambar PNG) dan saat dihapus (null). */
+  onChange: (dataUrl: string | null) => void;
   disabled?: boolean;
+  /** 'block': tombol Ulangi selebar kotak. 'link': tautan kecil di bawah kotak. */
+  clearStyle?: 'block' | 'link';
 }
 
-const CANVAS_WIDTH = 350;
-const CANVAS_HEIGHT = 180;
+// Resolusi internal kanvas. Tampilan menyesuaikan lebar layar lewat CSS.
+const CANVAS_WIDTH = 720;
+const CANVAS_HEIGHT = 400;
 
-export default function SignaturePad({ onSave, disabled }: SignaturePadProps) {
+export default function SignaturePad({ onChange, disabled, clearStyle = 'block' }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawing = useRef(false);
-  const [hasDrawn, setHasDrawn] = useState(false);
-
-  function getCanvas(): HTMLCanvasElement {
-    return canvasRef.current as HTMLCanvasElement;
-  }
-
-  function getContext(): CanvasRenderingContext2D {
-    return getCanvas().getContext('2d') as CanvasRenderingContext2D;
-  }
+  const hasDrawn = useRef(false);
 
   function getPos(e: React.PointerEvent<HTMLCanvasElement>) {
-    const canvas = getCanvas();
+    const canvas = e.currentTarget;
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
     return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
+      x: (e.clientX - rect.left) * (canvas.width / rect.width),
+      y: (e.clientY - rect.top) * (canvas.height / rect.height),
     };
+  }
+
+  function applyStroke(ctx: CanvasRenderingContext2D) {
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
   }
 
   function startDraw(e: React.PointerEvent<HTMLCanvasElement>) {
     if (disabled) return;
+    const ctx = e.currentTarget.getContext('2d');
+    if (!ctx) return;
+
     e.currentTarget.setPointerCapture(e.pointerId);
     isDrawing.current = true;
+
     const pos = getPos(e);
-    const ctx = getContext();
+    applyStroke(ctx);
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
+    // Titik kecil supaya sekali ketuk pun terlihat
+    ctx.lineTo(pos.x + 0.1, pos.y + 0.1);
+    ctx.stroke();
+    hasDrawn.current = true;
   }
 
   function draw(e: React.PointerEvent<HTMLCanvasElement>) {
     if (!isDrawing.current || disabled) return;
+    const ctx = e.currentTarget.getContext('2d');
+    if (!ctx) return;
+
     const pos = getPos(e);
-    const ctx = getContext();
+    applyStroke(ctx);
     ctx.lineTo(pos.x, pos.y);
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 2;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
     ctx.stroke();
-    setHasDrawn(true);
   }
 
-  function stopDraw() {
+  function finishDraw() {
+    if (!isDrawing.current) return;
     isDrawing.current = false;
+    const canvas = canvasRef.current;
+    if (canvas && hasDrawn.current) onChange(canvas.toDataURL('image/png'));
   }
 
   function clear() {
-    const canvas = getCanvas();
-    const ctx = getContext();
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    setHasDrawn(false);
-  }
-
-  function handleSave() {
-    if (!hasDrawn) return;
-    const dataUrl = getCanvas().toDataURL('image/png');
-    onSave(dataUrl);
+    hasDrawn.current = false;
+    onChange(null);
   }
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="sigpad">
       <canvas
         ref={canvasRef}
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
-        style={{
-          touchAction: 'none',
-          width: CANVAS_WIDTH + 'px',
-          height: CANVAS_HEIGHT + 'px',
-          maxWidth: '100%',
-        }}
-        className="rounded-lg border border-dashed bg-gray-50"
+        className={disabled ? 'sigpad__canvas sigpad__canvas--disabled' : 'sigpad__canvas'}
         onPointerDown={startDraw}
         onPointerMove={draw}
-        onPointerUp={stopDraw}
-        onPointerLeave={stopDraw}
+        onPointerUp={finishDraw}
+        onPointerCancel={finishDraw}
       />
 
-      <div className="flex w-full gap-3">
-        <button
-          type="button"
-          onClick={clear}
-          className="h-10 flex-1 rounded-lg border text-sm font-medium"
-        >
-          Ulangi
-        </button>
-
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={!hasDrawn || disabled}
-          className="h-11 flex-1 rounded-lg bg-black text-sm font-medium text-white disabled:opacity-50"
-        >
-          Simpan tanda tangan
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={clear}
+        disabled={disabled}
+        className={clearStyle === 'link' ? 'sigpad__clear sigpad__clear--link' : 'sigpad__clear'}
+      >
+        {clearStyle === 'block' && <RepeatIcon />}
+        Ulangi
+      </button>
     </div>
+  );
+}
+
+function RepeatIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m17 2 4 4-4 4" />
+      <path d="M3 11v-1a4 4 0 0 1 4-4h14" />
+      <path d="m7 22-4-4 4-4" />
+      <path d="M21 13v1a4 4 0 0 1-4 4H3" />
+    </svg>
   );
 }

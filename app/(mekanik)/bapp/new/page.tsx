@@ -1,6 +1,9 @@
 import { createServerClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import FlowHeader from '@/components/flow/FlowHeader';
+import FlowFooter from '@/components/flow/FlowFooter';
 import UnitDataForm from '@/components/form/UnitDataForm';
+import '@/styles/pages/flow.css';
 
 export default async function NewBappPage() {
   const supabase = await createServerClient();
@@ -11,20 +14,16 @@ export default async function NewBappPage() {
   if (!user) redirect('/login');
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <div className="px-4 pt-6">
-        <h1 className="text-lg font-medium">BAPP baru</h1>
-      </div>
+    <div className="app-shell">
+      <FlowHeader title="BAPP baru" backHref="/dashboard" step={1} />
 
-      <div className="flex gap-1.5 px-4 py-4">
-        <div className="h-1 flex-1 rounded-full bg-black" />
-        <div className="h-1 flex-1 rounded-full bg-gray-200" />
-        <div className="h-1 flex-1 rounded-full bg-gray-200" />
-      </div>
-
-      <p className="px-4 pb-3 text-xs text-gray-500">Langkah 1 dari 3 &middot; Info umum &amp; data unit</p>
-
-      <UnitDataForm />
+      <main className="flow">
+        <div className="flow__inner">
+          <p className="flow-step">Langkah 1 dari 3 &bull; Info umum &amp; data unit</p>
+          <UnitDataForm />
+        </div>
+        <FlowFooter />
+      </main>
     </div>
   );
 }

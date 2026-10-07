@@ -1,0 +1,408 @@
+/* ===== Bar judul + indikator langkah ===== */
+.flow-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 5px 0;
+}
+
+.flow-bar__back {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.flow-bar__title {
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.flow-progress {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+}
+
+.flow-progress__seg {
+  flex: 1;
+  height: 5px;
+  border-radius: 999px;
+  background: #4d4d4d;
+}
+
+.flow-progress__seg--on {
+  background: #ffffff;
+}
+
+/* ===== Kerangka halaman ===== */
+.flow {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.flow__inner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px var(--shell-pad-x) 0;
+}
+
+.flow-step {
+  margin-bottom: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-gray-text);
+}
+
+.flow-note {
+  margin-bottom: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--color-gray-text);
+}
+
+.flow-footer {
+  padding: 28px 0 28px;
+  display: flex;
+  justify-content: center;
+}
+
+.flow-footer img {
+  display: block;
+  width: auto;
+  height: 22px;
+}
+
+/* ===== Formulir ===== */
+.fform {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.fgroup {
+  margin-bottom: 16px;
+}
+
+.flabel {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: #000000;
+}
+
+.flabel--strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.flabel--muted {
+  color: var(--color-gray-text);
+}
+
+.fheading {
+  margin: 4px 0 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.finput {
+  display: block;
+  width: 100%;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #000000;
+  font-family: inherit;
+  font-size: 14px;
+  outline: 0;
+}
+
+.finput::placeholder {
+  color: #b5b5b5;
+}
+
+.finput:focus {
+  border-color: #000000;
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
+.finput[readonly] {
+  background: #f7f7f7;
+  color: #555555;
+}
+
+textarea.finput {
+  height: auto;
+  min-height: 38px;
+  padding: 9px 12px;
+  line-height: 1.4;
+  resize: vertical;
+}
+
+.finput--area {
+  min-height: 82px;
+}
+
+.fgrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 14px;
+  margin-bottom: 16px;
+}
+
+.fgrid .fgroup {
+  margin-bottom: 0;
+}
+
+.ferror {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-error);
+}
+
+.fmessage {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-error);
+}
+
+/* ===== Tombol ===== */
+.factions {
+  display: flex;
+  gap: 14px;
+  margin-top: auto;
+  padding-top: 28px;
+}
+
+.fbtn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #000000;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.fbtn--primary {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+}
+
+.fbtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fbtn--block {
+  flex: none;
+  width: 100%;
+}
+
+/* Dua tombol dengan lebar berbeda (tombol utama lebih lebar) */
+.factions--split .fbtn:first-child {
+  flex: 0.8;
+}
+
+.factions--split .fbtn--primary {
+  flex: 1.2;
+}
+
+/* ===== Pilihan dua kolom (toggle) ===== */
+.ftoggle-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+  margin-bottom: 16px;
+}
+
+.ftoggle {
+  height: 38px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #000000;
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.ftoggle--on {
+  border-color: #000000;
+  background: var(--color-primary);
+  font-weight: 600;
+}
+
+/* ===== Kartu baris pekerjaan ===== */
+.jrow {
+  margin-bottom: 18px;
+  padding: 8px 12px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.jrow__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 15px;
+}
+
+.jrow__delete {
+  display: flex;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: #000000;
+  cursor: pointer;
+}
+
+.jrow .finput + .finput {
+  margin-top: 8px;
+}
+
+/* ===== Waktu proses ===== */
+.wrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.wrow__label {
+  flex: none;
+  width: 112px;
+  font-size: 13px;
+  color: var(--color-gray-text);
+}
+
+.wrow .finput {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  font-size: 13px;
+  color: var(--color-gray-text);
+}
+
+/* ===== Preview ===== */
+.pcard {
+  padding: 12px 14px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.pcard__label {
+  font-size: 14px;
+  color: var(--color-gray-text);
+}
+
+.pcard__value {
+  margin: 2px 0 10px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.pcard__rule {
+  margin: 6px 0 10px;
+  border: 0;
+  border-top: 1px solid #dddddd;
+}
+
+.pjob {
+  margin-bottom: 10px;
+}
+
+.pjob__title {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.pjob__remarks {
+  margin-top: 1px;
+  font-size: 12px;
+  color: var(--color-gray-text);
+}
+
+.pcard__empty {
+  font-size: 12px;
+  color: #9a9a9a;
+}
+
+.pbanner {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: #c0ffca;
+  font-size: 14px;
+}
+
+.pinfo {
+  margin-top: 16px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #3c4dff;
+  text-align: center;
+}
+
+.pinfo svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+/* ===== Tablet dan desktop ===== */
+@media (min-width: 768px) {
+  .flow-footer img {
+    height: 28px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .flow-bar__title {
+    font-size: 22px;
+  }
+
+  .flow__inner {
+    padding-top: 28px;
+  }
+
+  .flow-footer img {
+    height: 36px;
+  }
+}

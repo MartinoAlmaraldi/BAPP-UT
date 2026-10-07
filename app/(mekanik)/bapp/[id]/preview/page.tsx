@@ -1,7 +1,10 @@
 import { createServerClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
+import FlowHeader from '@/components/flow/FlowHeader';
+import FlowFooter from '@/components/flow/FlowFooter';
 import BappPreview from '@/components/bapp/BappPreview';
 import type { BappWithJobDesc } from '@/types/bapp';
+import '@/styles/pages/flow.css';
 
 export default async function PreviewPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -20,18 +23,25 @@ export default async function PreviewPage({ params }: { params: Promise<{ id: st
 
   if (!bapp) notFound();
 
+  if (bapp.status === 'signed_mekanik') redirect('/bapp/' + id + '/customer');
+  if (bapp.status !== 'draft') redirect('/bapp/' + id + '/result');
+
   const sortedBapp: BappWithJobDesc = {
     ...bapp,
     job_desc: (bapp.job_desc ?? []).sort((a: { urutan: number }, b: { urutan: number }) => a.urutan - b.urutan),
   };
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <div className="px-4 pt-6">
-        <h1 className="text-lg font-medium">Preview BAPP</h1>
-      </div>
-      <div className="py-2" />
-      <BappPreview bapp={sortedBapp} />
+    <div className="app-shell">
+      <FlowHeader title="Preview BAPP" backHref={'/bapp/' + id + '/jobdesc'} step={3} />
+
+      <main className="flow">
+        <div className="flow__inner">
+          <p className="flow-step">Langkah 3 dari 3 &bull; Preview</p>
+          <BappPreview bapp={sortedBapp} />
+        </div>
+        <FlowFooter />
+      </main>
     </div>
   );
 }

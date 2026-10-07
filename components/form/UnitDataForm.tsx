@@ -5,180 +5,193 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createBrowserClient } from '@/lib/supabase/client';
+import { errorMessage } from '@/lib/errorMessage';
 import { unitDataSchema, type UnitDataInput } from '@/lib/validation/bappSchema';
+import '@/styles/pages/flow.css';
 
 interface UnitDataFormProps {
   bappId?: string; // kalau ada, berarti edit draft yang sudah ada
   defaultValues?: Partial<UnitDataInput>;
 }
 
+type Action = 'draft' | 'next' | null;
+
+// Teks kosong disimpan sebagai null supaya kolom tanggal tidak error
+function toDb(values: Partial<UnitDataInput>) {
+  const clean = (v?: string) => {
+    const t = (v ?? '').trim();
+    return t ? t : null;
+  };
+  return {
+    tanggal_penyerahan: clean(values.tanggal_penyerahan),
+    nama_customer: clean(values.nama_customer),
+    unit_model: clean(values.unit_model),
+    unit_serial_no: clean(values.unit_serial_no),
+    unit_code: clean(values.unit_code),
+    unit_location: clean(values.unit_location),
+    engine_model: clean(values.engine_model),
+    engine_serial_no: clean(values.engine_serial_no),
+    smr: clean(values.smr),
+  };
+}
+
 export default function UnitDataForm({ bappId, defaultValues }: UnitDataFormProps) {
   const router = useRouter();
   const supabase = createBrowserClient();
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState<Action>(null);
 
   const {
     register,
     handleSubmit,
+    getValues,
     formState: { errors },
   } = useForm<UnitDataInput>({
     resolver: zodResolver(unitDataSchema),
     defaultValues,
   });
 
-  async function onSubmit(data: UnitDataInput) {
+  // Simpan ke database. Mengembalikan id BAPP, atau null kalau user belum login.
+  async function save(data: ReturnType<typeof toDb>): Promise<string | null> {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      router.push('/login');
+      return null;
+    }
+
+    if (bappId) {
+      const { error: updateError } = await supabase.from('bapp').update(data).eq('id', bappId);
+      if (updateError) throw updateError;
+      return bappId;
+    }
+
+    const { data: created, error: insertError } = await supabase
+      .from('bapp')
+      .insert({ ...data, mekanik_id: user.id, status: 'draft' })
+      .select('id')
+      .single();
+    if (insertError) throw insertError;
+    return created.id;
+  }
+
+  async function onNext(values: UnitDataInput) {
     setError(null);
-    setLoading(true);
-
+    setBusy('next');
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-
-      if (bappId) {
-        // Update draft yang sudah ada
-        const { error: updateError } = await supabase
-          .from('bapp')
-          .update(data)
-          .eq('id', bappId);
-
-        if (updateError) throw updateError;
-        router.push(`/bapp/${bappId}/jobdesc`);
-      } else {
-        // Buat BAPP baru sebagai draft
-        const { data: newBapp, error: insertError } = await supabase
-          .from('bapp')
-          .insert({ ...data, mekanik_id: user.id, status: 'draft' })
-          .select('id')
-          .single();
-
-        if (insertError) throw insertError;
-        router.push(`/bapp/${newBapp.id}/jobdesc`);
-      }
+      const id = await save(toDb(values));
+      if (id) router.push(`/bapp/${id}/jobdesc`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Gagal menyimpan data, coba lagi.');
+      setError(errorMessage(err, 'Gagal menyimpan data, coba lagi.'));
     } finally {
-      setLoading(false);
+      setBusy(null);
+    }
+  }
+
+  async function onDraft() {
+    setError(null);
+    const data = toDb(getValues());
+
+    if (Object.values(data).every((v) => v === null)) {
+      setError('Isi minimal satu kolom untuk menyimpan draft.');
+      return;
+    }
+
+    setBusy('draft');
+    try {
+      const id = await save(data);
+      if (id) router.push('/dashboard');
+    } catch (err) {
+      setError(errorMessage(err, 'Gagal menyimpan draft, coba lagi.'));
+    } finally {
+      setBusy(null);
     }
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 px-4 pb-6">
-      <div>
-        <label className="mb-1 block text-xs text-gray-500">Tanggal penyerahan</label>
-        <input
-          type="date"
-          {...register('tanggal_penyerahan')}
-          className="w-full rounded-lg border px-3 py-2 text-sm"
-        />
-        {errors.tanggal_penyerahan && (
-          <p className="mt-1 text-xs text-red-600">{errors.tanggal_penyerahan.message}</p>
-        )}
+    <form onSubmit={handleSubmit(onNext)} className="fform" noValidate>
+      <div className="fgroup">
+        <label className="flabel flabel--strong" htmlFor="tanggal_penyerahan">
+          Tanggal penyerahan
+        </label>
+        <input id="tanggal_penyerahan" type="date" className="finput" {...register('tanggal_penyerahan')} />
+        {errors.tanggal_penyerahan && <p className="ferror">{errors.tanggal_penyerahan.message}</p>}
       </div>
 
-      <div>
-        <label className="mb-1 block text-xs text-gray-500">Nama customer</label>
-        <input
-          type="text"
-          placeholder="PT Sawit Makmur"
-          {...register('nama_customer')}
-          className="w-full rounded-lg border px-3 py-2 text-sm"
-        />
-        {errors.nama_customer && (
-          <p className="mt-1 text-xs text-red-600">{errors.nama_customer.message}</p>
-        )}
+      <div className="fgroup">
+        <label className="flabel flabel--strong" htmlFor="nama_customer">
+          Nama Customer
+        </label>
+        <input id="nama_customer" type="text" className="finput" {...register('nama_customer')} />
+        {errors.nama_customer && <p className="ferror">{errors.nama_customer.message}</p>}
       </div>
 
-      <p className="mt-2 text-sm font-medium">Unit</p>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="mb-1 block text-xs text-gray-500">Model</label>
-          <input
-            type="text"
-            placeholder="PC200-8"
-            {...register('unit_model')}
-            className="w-full rounded-lg border px-3 py-2 text-sm"
-          />
-          {errors.unit_model && (
-            <p className="mt-1 text-xs text-red-600">{errors.unit_model.message}</p>
-          )}
+      <p className="fheading">Unit</p>
+      <div className="fgrid">
+        <div className="fgroup">
+          <label className="flabel" htmlFor="unit_model">
+            Model
+          </label>
+          <input id="unit_model" type="text" className="finput" {...register('unit_model')} />
+          {errors.unit_model && <p className="ferror">Model wajib diisi</p>}
         </div>
-        <div>
-          <label className="mb-1 block text-xs text-gray-500">Serial no.</label>
-          <input
-            type="text"
-            {...register('unit_serial_no')}
-            className="w-full rounded-lg border px-3 py-2 text-sm"
-          />
-          {errors.unit_serial_no && (
-            <p className="mt-1 text-xs text-red-600">{errors.unit_serial_no.message}</p>
-          )}
+        <div className="fgroup">
+          <label className="flabel" htmlFor="unit_serial_no">
+            Serial no.
+          </label>
+          <input id="unit_serial_no" type="text" className="finput" {...register('unit_serial_no')} />
+          {errors.unit_serial_no && <p className="ferror">Serial no. wajib diisi</p>}
         </div>
-        <div>
-          <label className="mb-1 block text-xs text-gray-500">Code unit</label>
-          <input
-            type="text"
-            {...register('unit_code')}
-            className="w-full rounded-lg border px-3 py-2 text-sm"
-          />
+        <div className="fgroup">
+          <label className="flabel" htmlFor="unit_code">
+            Code unit
+          </label>
+          <input id="unit_code" type="text" className="finput" {...register('unit_code')} />
         </div>
-        <div>
-          <label className="mb-1 block text-xs text-gray-500">Location</label>
-          <input
-            type="text"
-            {...register('unit_location')}
-            className="w-full rounded-lg border px-3 py-2 text-sm"
-          />
-          {errors.unit_location && (
-            <p className="mt-1 text-xs text-red-600">{errors.unit_location.message}</p>
-          )}
+        <div className="fgroup">
+          <label className="flabel" htmlFor="unit_location">
+            Location
+          </label>
+          <input id="unit_location" type="text" className="finput" {...register('unit_location')} />
+          {errors.unit_location && <p className="ferror">Location wajib diisi</p>}
         </div>
       </div>
 
-      <p className="mt-2 text-sm font-medium">Engine</p>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="mb-1 block text-xs text-gray-500">Model</label>
-          <input
-            type="text"
-            {...register('engine_model')}
-            className="w-full rounded-lg border px-3 py-2 text-sm"
-          />
+      <p className="fheading">Engine</p>
+      <div className="fgrid">
+        <div className="fgroup">
+          <label className="flabel" htmlFor="engine_model">
+            Model
+          </label>
+          <input id="engine_model" type="text" className="finput" {...register('engine_model')} />
         </div>
-        <div>
-          <label className="mb-1 block text-xs text-gray-500">Serial no.</label>
-          <input
-            type="text"
-            {...register('engine_serial_no')}
-            className="w-full rounded-lg border px-3 py-2 text-sm"
-          />
+        <div className="fgroup">
+          <label className="flabel" htmlFor="engine_serial_no">
+            Serial no.
+          </label>
+          <input id="engine_serial_no" type="text" className="finput" {...register('engine_serial_no')} />
         </div>
       </div>
 
-      <div>
-        <label className="mb-1 block text-xs text-gray-500">SMR (HM/KM)</label>
-        <input
-          type="text"
-          {...register('smr')}
-          className="w-full rounded-lg border px-3 py-2 text-sm"
-        />
+      <div className="fgroup">
+        <label className="flabel" htmlFor="smr">
+          SMR (HM/KM)
+        </label>
+        <input id="smr" type="text" className="finput" {...register('smr')} />
       </div>
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p className="fmessage">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="mt-2 h-11 w-full rounded-lg bg-black text-sm font-medium text-white disabled:opacity-50"
-      >
-        {loading ? 'Menyimpan...' : 'Lanjut'}
-      </button>
+      <div className="factions">
+        <button type="button" className="fbtn" onClick={onDraft} disabled={busy !== null}>
+          {busy === 'draft' ? 'Menyimpan...' : 'Simpan draft'}
+        </button>
+        <button type="submit" className="fbtn fbtn--primary" disabled={busy !== null}>
+          {busy === 'next' ? 'Menyimpan...' : 'Lanjut'}
+        </button>
+      </div>
     </form>
   );
 }
