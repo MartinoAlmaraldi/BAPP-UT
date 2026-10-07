@@ -122,7 +122,7 @@ export default function CustomerSignForm({ bappId, defaultNamaCustomer }: Custom
       </div>
 
       <p className="flabel flabel--muted">Tanda tangan customer</p>
-      <SignaturePad onChange={setSignature} disabled={loading} clearStyle="link" />
+      <SignaturePad onChange={setSignature} disabled={loading} />
 
       {error && <p className="fmessage">{error}</p>}
 

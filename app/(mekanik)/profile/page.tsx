@@ -11,7 +11,7 @@ export default async function ProfilePage() {
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: profile } = await supabase.from('users').select('name, role, nrp, avatar_url').eq('id', user.id).single();
+  const { data: profile } = await supabase.from('users').select('name, role, nrp, branch, avatar_url').eq('id', user.id).single();
   if (profile?.role === 'admin') redirect('/admin/profile');
 
   return (
@@ -20,6 +20,7 @@ export default async function ProfilePage() {
         name={profile?.name ?? ''}
         role="mekanik"
         nrp={profile?.nrp ?? null}
+        branch={profile?.branch ?? null}
         avatarUrl={profile?.avatar_url ?? null}
         infoHref="/profile/info"
         securityHref="/profile/security"

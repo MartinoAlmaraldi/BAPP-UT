@@ -84,6 +84,11 @@
   font-size: 15px;
 }
 
+.profile-card__branch {
+  margin-top: 6px;
+  font-size: 15px;
+}
+
 .profile-card__nrp {
   margin-top: 6px;
   font-size: 15px;

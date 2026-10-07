@@ -8,12 +8,13 @@ interface ProfileViewProps {
   name: string;
   role: 'admin' | 'mekanik';
   nrp?: string | null;
+  branch?: string | null;
   avatarUrl?: string | null;
   infoHref: string;
   securityHref: string;
 }
 
-export default function ProfileView({ name, role, nrp, avatarUrl, infoHref, securityHref }: ProfileViewProps) {
+export default function ProfileView({ name, role, nrp, branch, avatarUrl, infoHref, securityHref }: ProfileViewProps) {
   return (
     <>
       <AppHeader>
@@ -33,6 +34,7 @@ export default function ProfileView({ name, role, nrp, avatarUrl, infoHref, secu
             </div>
             <p className="profile-card__name">{name || '-'}</p>
             <p className="profile-card__role">{role === 'admin' ? 'Admin' : 'Mekanik'}</p>
+            {branch && <p className="profile-card__branch">{branch}</p>}
             {nrp && <p className="profile-card__nrp">{nrp}</p>}
           </section>
 
