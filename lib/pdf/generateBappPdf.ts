@@ -227,6 +227,83 @@ function drawWrapped(
   });
 } 
 
+// ===== PARAGRAF CAMPURAN (bold + regular) YANG MENGALIR =====
+type TextSeg = { text: string; bold: boolean };
+
+// Susun rangkaian segmen bold/regular jadi beberapa baris. Turun baris hanya kalau kata berikutnya tidak muat.
+function layoutMixedLines(
+  fontRegular: PDFFont,
+  fontBold: PDFFont,
+  segs: TextSeg[],
+  maxWidth: number,
+  size: number
+): TextSeg[][] {
+  const widthOf = (t: string, bold: boolean) => (bold ? fontBold : fontRegular).widthOfTextAtSize(t, size);
+  const isSpace = (t: string) => t.trim() === '';
+
+  // Pecah jadi kata dan spasi, dengan bold/regular tetap menempel pada tiap potongan
+  const tokens: TextSeg[] = [];
+  for (const seg of segs) {
+    for (const part of seg.text.match(/\S+|\s+/g) ?? []) tokens.push({ text: part, bold: seg.bold });
+  }
+
+  const lines: TextSeg[][] = [[]];
+  let lineWidth = 0;
+
+  const trimEnd = (line: TextSeg[]) => {
+    while (line.length > 0 && isSpace(line[line.length - 1].text)) line.pop();
+  };
+
+  const newLine = () => {
+    trimEnd(lines[lines.length - 1]);
+    lines.push([]);
+    lineWidth = 0;
+  };
+
+  for (const token of tokens) {
+    const current = lines[lines.length - 1];
+
+    if (isSpace(token.text)) {
+      if (current.length === 0) continue; // tidak ada spasi di awal baris
+      current.push(token);
+      lineWidth += widthOf(token.text, token.bold);
+      continue;
+    }
+
+    const w = widthOf(token.text, token.bold);
+    if (lineWidth + w <= maxWidth) {
+      current.push(token);
+      lineWidth += w;
+      continue;
+    }
+
+    // Tidak muat: pindah ke baris berikutnya (kecuali baris ini masih kosong)
+    if (current.length > 0) newLine();
+
+    if (w > maxWidth) {
+      // Satu kata yang lebih lebar dari satu baris: potong per huruf
+      let chunk = '';
+      for (const ch of token.text) {
+        if (chunk && widthOf(chunk + ch, token.bold) > maxWidth) {
+          lines[lines.length - 1].push({ text: chunk, bold: token.bold });
+          newLine();
+          chunk = ch;
+        } else {
+          chunk += ch;
+        }
+      }
+      lines[lines.length - 1].push({ text: chunk, bold: token.bold });
+      lineWidth = widthOf(chunk, token.bold);
+    } else {
+      lines[lines.length - 1].push(token);
+      lineWidth = w;
+    }
+  }
+
+  trimEnd(lines[lines.length - 1]);
+  return lines;
+}
+
 // ===== KOORDINAT PRESISI (hasil ekstraksi langsung dari template F4 asli) =====
 const UNIT_TABLE = {
   left: 23.3, right: 586.4,
@@ -322,34 +399,38 @@ export async function generateBappPdf(bapp: BappData): Promise<Uint8Array> {
     });
   };
 
-  writeSeq(
-    [
-      { text: 'Pada hari ' + hariStr + ' tanggal (' + tanggalAngka + ') telah dilakukan penyerahan pekerjaan dari ', bold: false },
-      { text: 'PT. UNITED', bold: true },
-    ],
-    113.5
-  );
-  
-  const namaSegmentMaxW =
-    586.4 -
-    23 -
-    fontBold.widthOfTextAtSize('TRACTORS Tbk. kepada  ', size1) -
-    fontBold.widthOfTextAtSize(' sebagai berikut :', size1);
-  const namaCustomerText = truncateToWidth(
-    font,
-    bapp.nama_customer ?? '......................................................................................................................',
-    namaSegmentMaxW,
-    size1
-  );
+  // Satu kalimat yang mengalir: turun baris hanya kalau kepanjangan (maksimal 2 baris, ruang di atas tabel terbatas)
+  const INTRO_MAX_LINES = 2;
+  const introMaxWidth = 586.4 - 23;
+  const customerFull =
+    (bapp.nama_customer ?? '').trim() ||
+    '......................................................................................................................';
 
-  writeSeq(
-    [
-      { text: 'TRACTORS Tbk. kepada  ', bold: true },
-      { text: namaCustomerText, bold: false },
-      { text: ' sebagai berikut :', bold: true },
-    ],
-    128.5
-  );
+  const buildIntro = (customer: string): TextSeg[] => [
+    { text: 'Pada hari ' + hariStr + ' tanggal (' + tanggalAngka + ') telah dilakukan penyerahan pekerjaan dari ', bold: false },
+    { text: 'PT. UNITED TRACTORS Tbk. kepada ', bold: true },
+    { text: customer, bold: false },
+    { text: ' sebagai berikut :', bold: true },
+  ];
+
+  let customerText = customerFull;
+  let introLines = layoutMixedLines(font, fontBold, buildIntro(customerText), introMaxWidth, size1);
+  // Kalau nama customer terlalu panjang sampai lebih dari 2 baris, singkat dengan "..."
+  while (introLines.length > INTRO_MAX_LINES && customerText.length > 1) {
+    customerText = customerText.slice(0, -1).trimEnd();
+    introLines = layoutMixedLines(font, fontBold, buildIntro(customerText + '...'), introMaxWidth, size1);
+  }
+
+  // Satu baris ditaruh di tengah antara dua posisi baris
+  const introTops = introLines.length === 1 ? [121] : [113.5, 128.5];
+  introLines.forEach((segs, i) => {
+    let curX = 23;
+    segs.forEach((seg) => {
+      const f = seg.bold ? fontBold : font;
+      page.drawText(seg.text, { x: curX, y: fromTop(introTops[i]), size: size1, font: f });
+      curX += f.widthOfTextAtSize(seg.text, size1);
+    });
+  });
 
   // ===== HEADER TABEL UNIT/ENGINE (size 8, bold) =====
   // Catatan: baseline = tengah_baris + (size * 0.3) supaya teks benar2 center, TIDAK menembus garis atas
