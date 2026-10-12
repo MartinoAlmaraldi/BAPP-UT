@@ -49,7 +49,7 @@ export default async function DashboardPage() {
     .select('id, unit_model, nama_customer, status, created_at')
     .eq('mekanik_id', user.id)
     .order('created_at', { ascending: false })
-    .limit(5);
+    .limit(6);
 
   return (
     <div className="app-shell">
