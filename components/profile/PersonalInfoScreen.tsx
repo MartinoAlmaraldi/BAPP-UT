@@ -35,6 +35,7 @@ export default async function PersonalInfoScreen({ expectRole }: PersonalInfoScr
         <div className="psub__inner">
           <PersonalInfoForm
             userId={user.id}
+            backHref={isAdmin ? '/admin/profile' : '/profile'}
             initial={{
               name: profile?.name ?? '',
               email: user.email ?? profile?.email ?? '',

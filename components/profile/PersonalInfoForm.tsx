@@ -10,6 +10,7 @@ import '@/styles/pages/profile.css';
 
 interface PersonalInfoFormProps {
   userId: string;
+  backHref: string;
   initial: {
     name: string;
     email: string;
@@ -23,7 +24,7 @@ type Message = { type: 'success' | 'error'; text: string } | null;
 
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 
-export default function PersonalInfoForm({ userId, initial }: PersonalInfoFormProps) {
+export default function PersonalInfoForm({ userId, backHref, initial }: PersonalInfoFormProps) {
   const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -124,8 +125,9 @@ export default function PersonalInfoForm({ userId, initial }: PersonalInfoFormPr
       if (!rows || rows.length === 0) throw new Error('Gagal menyimpan. Pastikan migration 0007 sudah dijalankan.');
 
       let text = 'Perubahan disimpan.';
+      const emailChanged = cleanEmail !== initial.email.toLowerCase();
 
-      if (cleanEmail !== initial.email.toLowerCase()) {
+      if (emailChanged) {
         const { error: emailError } = await supabase.auth.updateUser({ email: cleanEmail });
         if (emailError) {
           setMessage({ type: 'error', text: `Data lain sudah disimpan, tetapi email gagal diubah: ${emailError.message}` });
@@ -138,7 +140,13 @@ export default function PersonalInfoForm({ userId, initial }: PersonalInfoFormPr
       setName(cleanName);
       setNrp(cleanNrp);
       setMessage({ type: 'success', text });
-      router.refresh();
+
+      if (emailChanged) {
+        // Beri waktu membaca info konfirmasi email sebelum pindah halaman
+        setTimeout(() => router.push(backHref), 3000);
+      } else {
+        router.push(backHref);
+      }
     } catch (err) {
       setMessage({ type: 'error', text: err instanceof Error ? err.message : 'Terjadi kesalahan, coba lagi.' });
     } finally {
