@@ -84,6 +84,19 @@
   color: var(--color-gray-text);
 }
 
+.admin__section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.admin__section-link {
+  margin-top: 28px;
+  font-size: 12px;
+  color: var(--color-link);
+  text-decoration: none;
+}
+
 .admin__list {
   margin-top: 8px;
   display: grid;
@@ -311,6 +324,11 @@
   .admin-card__value {
     margin-top: 8px;
     font-size: 34px;
+  }
+
+  .admin__section-link {
+    margin-top: 40px;
+    font-size: 13px;
   }
 
   .admin__section-title {

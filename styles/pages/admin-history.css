@@ -1,0 +1,17 @@
+/* Penyesuaian halaman History admin (memakai gaya History mekanik + daftar admin) */
+.history__inner .admin__list {
+  margin-top: 20px;
+}
+
+.history__note {
+  margin-top: 16px;
+  text-align: center;
+  font-size: 12px;
+  color: #9a9a9a;
+}
+
+@media (min-width: 1024px) {
+  .history__inner .admin-table {
+    margin-top: 20px;
+  }
+}

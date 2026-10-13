@@ -62,7 +62,12 @@ export default async function AdminDashboardPage() {
             <SummaryCard label="Total BAPP" value={counts.total} />
           </div>
 
-          <p className="admin__section-title">Terbaru</p>
+          <div className="admin__section-head">
+            <p className="admin__section-title">Terbaru</p>
+            <a href="/admin/history" className="admin__section-link">
+              Lihat semua
+            </a>
+          </div>
 
           {/* Mobile dan tablet: kartu */}
           <div className="admin__list admin__list--cards">
