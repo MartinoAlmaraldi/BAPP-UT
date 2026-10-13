@@ -571,7 +571,31 @@ export async function generateBappPdf(bapp: BappData): Promise<Uint8Array> {
   return pdfDoc.save();
 }
 
-export async function generateAndUploadBappPdf(bappId: string): Promise<string> {
+// Nama file yang aman dipakai di semua sistem (huruf dan angka saja, dipisah tanda hubung)
+function safeFilePart(value: string | null | undefined): string {
+  return (value ?? '')
+    .normalize('NFKD')
+    .replace(/[^A-Za-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40);
+}
+
+function buildFileName(bapp: {
+  unit_model: string | null;
+  nama_customer: string | null;
+  tanggal_penyerahan: string | null;
+}): string {
+  const parts = [
+    'BAPP',
+    safeFilePart(bapp.unit_model),
+    safeFilePart(bapp.nama_customer),
+    bapp.tanggal_penyerahan ?? '',
+  ].filter(Boolean);
+  return parts.join('-') + '.pdf';
+}
+
+// Buat PDF langsung dari data BAPP. PDF tidak disimpan di mana pun: dibuat ulang setiap kali diminta.
+export async function generateBappPdfById(bappId: string): Promise<{ bytes: Uint8Array; fileName: string }> {
   const { data: bapp, error } = await supabaseAdmin
     .from('bapp')
     .select('*, job_desc:bapp_job_desc(*)')
@@ -582,15 +606,6 @@ export async function generateAndUploadBappPdf(bappId: string): Promise<string> 
 
   const { data: mekanik } = await supabaseAdmin.from('users').select('name').eq('id', bapp.mekanik_id).single();
 
-  const pdfBytes = await generateBappPdf({ ...bapp, namaMekanik: mekanik?.name ?? null } as BappData);
-  const filePath = bapp.mekanik_id + '/bapp-' + bapp.id + '.pdf';
-
-  const { error: uploadError } = await supabaseAdmin.storage.from('pdf-hasil').upload(filePath, pdfBytes, { contentType: 'application/pdf', upsert: true });
-  if (uploadError) throw uploadError;
-
-  const { data: urlData, error: urlError } = await supabaseAdmin.storage.from('pdf-hasil').createSignedUrl(filePath, 60 * 60 * 24 * 7);
-  if (urlError || !urlData) throw urlError ?? new Error('Gagal membuat signed URL');
-
-  await supabaseAdmin.from('bapp').update({ pdf_url: urlData.signedUrl }).eq('id', bapp.id);
-  return urlData.signedUrl;
+  const bytes = await generateBappPdf({ ...bapp, namaMekanik: mekanik?.name ?? null } as BappData);
+  return { bytes, fileName: buildFileName(bapp) };
 }

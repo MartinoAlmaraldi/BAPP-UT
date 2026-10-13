@@ -4,7 +4,6 @@ import FlowHeader from '@/components/flow/FlowHeader';
 import FlowFooter from '@/components/flow/FlowFooter';
 import DoneIllustration from '@/components/bapp/DoneIllustration';
 import ShareButton from '@/components/bapp/ShareButton';
-import GeneratePdfButton from '@/components/bapp/GeneratePdfButton';
 import '@/styles/pages/flow.css';
 import '@/styles/pages/result.css';
 
@@ -19,7 +18,7 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
 
   const { data: bapp } = await supabase
     .from('bapp')
-    .select('id, unit_model, nama_customer, status, pdf_url')
+    .select('id, unit_model, nama_customer, status')
     .eq('id', id)
     .single();
 
@@ -41,25 +40,13 @@ export default async function ResultPage({ params }: { params: Promise<{ id: str
             {bapp.unit_model ?? '-'} &bull; {bapp.nama_customer ?? '-'}
           </p>
 
-          {bapp.pdf_url ? (
-            <div className="result-card">
-              <p className="result-card__title">PDF sudah tersedia</p>
-              <a
-                href={bapp.pdf_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="fbtn fbtn--primary fbtn--block"
-              >
-                Download PDF
-              </a>
-              <ShareButton url={bapp.pdf_url} title={'BAPP ' + (bapp.unit_model ?? '')} />
-            </div>
-          ) : (
-            <div className="result-card result-card--empty">
-              <p className="result-card__title">PDF belum dibuat untuk BAPP ini.</p>
-              <GeneratePdfButton bappId={bapp.id} />
-            </div>
-          )}
+          <div className="result-card">
+            <p className="result-card__title">PDF siap diunduh</p>
+            <a href={'/api/bapp/' + bapp.id + '/pdf?download=1'} className="fbtn fbtn--primary fbtn--block">
+              Download PDF
+            </a>
+            <ShareButton bappId={bapp.id} title={'BAPP ' + (bapp.unit_model ?? '')} />
+          </div>
 
           <a href="/dashboard" className="fbtn fbtn--block">
             Kembali ke dashboard

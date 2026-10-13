@@ -73,9 +73,6 @@ export default function CustomerSignForm({ bappId, defaultNamaCustomer }: Custom
         .eq('id', bappId);
       if (updateError) throw updateError;
 
-      // Kalau pembuatan PDF gagal, halaman hasil menyediakan tombol untuk mencoba lagi
-      await fetch('/api/bapp/' + bappId + '/generate-pdf', { method: 'POST' }).catch(() => null);
-
       router.push('/bapp/' + bappId + '/result');
     } catch (err) {
       setError(errorMessage(err, 'Gagal menyimpan, coba lagi.'));

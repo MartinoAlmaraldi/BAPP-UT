@@ -81,9 +81,9 @@ export default async function AdminBappDetailPage({ params }: { params: Promise<
         </div>
       )}
 
-      {bapp.pdf_url ? (
+      {bapp.status === 'completed' || bapp.status === 'reviewed' ? (
         <a
-          href={bapp.pdf_url}
+          href={'/api/bapp/' + bapp.id + '/pdf'}
           target="_blank"
           rel="noopener noreferrer"
           className="flex h-11 w-full items-center justify-center rounded-lg bg-black text-sm font-medium text-white"
@@ -91,7 +91,7 @@ export default async function AdminBappDetailPage({ params }: { params: Promise<
           Buka PDF
         </a>
       ) : (
-        <p className="text-center text-sm text-gray-400">PDF belum digenerate</p>
+        <p className="text-center text-sm text-gray-400">PDF tersedia setelah customer menandatangani</p>
       )}
     </div>
   );
