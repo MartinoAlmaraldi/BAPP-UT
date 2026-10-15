@@ -14,6 +14,8 @@ interface AdminHistoryViewProps {
   rows: AdminBappRow[];
   /** true kalau hasil dipotong oleh batas jumlah baris */
   truncated: boolean;
+  /** Kalau ada, hanya BAPP milik mekanik ini yang ditampilkan */
+  mekanikFilter?: { id: string; name: string } | null;
 }
 
 const FILTERS: { label: string; value: BappStatus | undefined }[] = [
@@ -23,15 +25,16 @@ const FILTERS: { label: string; value: BappStatus | undefined }[] = [
   { label: 'Selesai', value: 'completed' },
 ];
 
-function buildHref(status: BappStatus | undefined, q: string): string {
+function buildHref(status: BappStatus | undefined, q: string, mekanikId?: string): string {
   const search = new URLSearchParams();
   if (status) search.set('status', status);
   if (q) search.set('q', q);
+  if (mekanikId) search.set('mekanik', mekanikId);
   const qs = search.toString();
   return qs ? `/admin/history?${qs}` : '/admin/history';
 }
 
-export default function AdminHistoryView({ status, q, rows, truncated }: AdminHistoryViewProps) {
+export default function AdminHistoryView({ status, q, rows, truncated, mekanikFilter }: AdminHistoryViewProps) {
   return (
     <div className="app-shell">
       <AppHeader>
@@ -39,6 +42,7 @@ export default function AdminHistoryView({ status, q, rows, truncated }: AdminHi
 
         <form className="history__search" method="get" action="/admin/history">
           {status && <input type="hidden" name="status" value={status} />}
+          {mekanikFilter && <input type="hidden" name="mekanik" value={mekanikFilter.id} />}
           <button type="submit" className="history__search-btn" aria-label="Cari">
             <SearchIcon />
           </button>
@@ -55,13 +59,22 @@ export default function AdminHistoryView({ status, q, rows, truncated }: AdminHi
 
       <main className="history">
         <div className="history__inner">
+          {mekanikFilter && (
+            <div className="history__chip">
+              <span>Mekanik: {mekanikFilter.name}</span>
+              <a href={buildHref(status, q)} aria-label="Hapus filter mekanik">
+                &#10005;
+              </a>
+            </div>
+          )}
+
           <div className="history__filters">
             {FILTERS.map((f) => {
               const isActive = status === f.value;
               return (
                 <a
                   key={f.label}
-                  href={buildHref(f.value, q)}
+                  href={buildHref(f.value, q, mekanikFilter?.id)}
                   className={isActive ? 'filter-pill filter-pill--active' : 'filter-pill'}
                 >
                   {f.label}

@@ -1,0 +1,403 @@
+/* ===== Papan Mekanik ===== */
+.mk-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 110px;
+}
+
+.mk-inner {
+  width: 100%;
+  max-width: var(--shell-max-width);
+  margin: 0 auto;
+  padding: 0 var(--shell-pad-x);
+}
+
+.mk-inner--narrow {
+  max-width: 760px;
+}
+
+.mk-toolbar {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.mk-select {
+  flex: 1;
+  min-width: 140px;
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.mk-apply {
+  flex: 1 0 100%;
+  height: 38px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--color-primary);
+  color: #000000;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.mk-count {
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--color-gray-text);
+}
+
+.mk-empty {
+  padding: 32px 0;
+  text-align: center;
+  font-size: 14px;
+  color: #9a9a9a;
+}
+
+/* Avatar kecil */
+.mk-avatar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #e8e8e8;
+  color: #111111;
+}
+
+.mk-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mk-link {
+  font-size: 15px;
+  font-weight: 600;
+  color: #000000;
+  text-decoration: none;
+}
+
+.mk-meta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-gray-text);
+}
+
+.mk-flag {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #ffe5e5;
+  color: #c0121f;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mk-action {
+  position: relative;
+  z-index: 1;
+  color: var(--color-link);
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+/* Kartu (mobile dan tablet) */
+.mk-cards {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.mk-card {
+  position: relative;
+  padding: 12px 14px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.mk-card .mk-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.mk-card__top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mk-card__who {
+  flex: 1;
+  min-width: 0;
+}
+
+.mk-card__stats {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  text-align: center;
+}
+
+.mk-stat__value {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.mk-stat__label {
+  margin-top: 2px;
+  font-size: 10px;
+  color: var(--color-gray-text);
+}
+
+.mk-card__foot {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid #ececec;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--color-gray-text);
+}
+
+/* Tabel (desktop) */
+.mk-table {
+  display: none;
+}
+
+/* ===== Detail mekanik ===== */
+.mkd-card {
+  margin-top: 20px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.mkd-card .mk-avatar {
+  width: 72px;
+  height: 72px;
+}
+
+.mkd-name {
+  font-size: 18px;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.mkd-role {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: #f0f0f0;
+  color: var(--color-gray-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.mkd-role--admin {
+  background: var(--color-primary-light);
+  color: #000000;
+}
+
+.mkd-info {
+  margin-top: 16px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.mkd-info__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 18px;
+  border-top: 1px solid #ececec;
+  font-size: 14px;
+}
+
+.mkd-info__row:first-child {
+  border-top: 0;
+}
+
+.mkd-info__label {
+  flex: none;
+  color: var(--color-gray-text);
+}
+
+.mkd-info__value {
+  text-align: right;
+  word-break: break-all;
+}
+
+.mkd-title {
+  margin-top: 24px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mkd-list {
+  margin-top: 10px;
+  display: grid;
+  gap: 9px;
+}
+
+.mkd-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 44px;
+  margin-top: 16px;
+  border-radius: 6px;
+  background: var(--color-primary);
+  color: #000000;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.mkd-footer {
+  margin-top: auto;
+  padding: 32px 0 28px;
+  display: flex;
+  justify-content: center;
+}
+
+.mkd-footer img {
+  display: block;
+  width: auto;
+  height: 22px;
+}
+
+/* ===== Tablet ===== */
+@media (min-width: 768px) {
+  .mk-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .mkd-footer img {
+    height: 28px;
+  }
+}
+
+/* ===== Desktop ===== */
+@media (min-width: 1024px) {
+  .mk-page {
+    padding-bottom: 40px;
+  }
+
+  .mk-toolbar .mk-select {
+    max-width: 240px;
+  }
+
+  .mk-apply {
+    flex: none;
+  }
+
+  .mk-cards {
+    display: none;
+  }
+
+  .mk-table {
+    display: block;
+    margin-top: 12px;
+    border: 1px solid var(--color-line);
+    border-radius: 8px;
+    background: #ffffff;
+    overflow: hidden;
+  }
+
+  .mk-thead,
+  .mk-row {
+    display: grid;
+    grid-template-columns: 2.4fr 1.4fr 0.7fr 1fr 1fr 0.7fr 1.2fr 110px;
+    gap: 12px;
+    align-items: center;
+    padding: 0 20px;
+  }
+
+  .mk-thead {
+    height: 46px;
+    background: #000000;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .mk-thead a {
+    color: #ffffff;
+    text-decoration: none;
+  }
+
+  .mk-num {
+    text-align: center;
+  }
+
+  .mk-row {
+    position: relative;
+    height: 66px;
+    border-top: 1px solid #ececec;
+    font-size: 14px;
+  }
+
+  .mk-thead + .mk-row {
+    border-top: 0;
+  }
+
+  .mk-row:hover {
+    background: #fafafa;
+  }
+
+  .mk-row .mk-link::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .mk-who {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .mk-muted {
+    font-size: 13px;
+    color: var(--color-gray-text);
+  }
+
+  .mk-num strong {
+    font-weight: 500;
+  }
+
+  .mkd-footer img {
+    height: 36px;
+  }
+}

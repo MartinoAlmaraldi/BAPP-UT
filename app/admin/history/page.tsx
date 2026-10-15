@@ -5,11 +5,12 @@ import type { AdminBappRow } from '@/components/bapp/AdminBappTable';
 import type { BappStatus } from '@/types/bapp';
 
 interface AdminHistoryPageProps {
-  searchParams: Promise<{ status?: string | string[]; q?: string | string[] }>;
+  searchParams: Promise<{ status?: string | string[]; q?: string | string[]; mekanik?: string | string[] }>;
 }
 
 const VALID_STATUS: BappStatus[] = ['draft', 'signed_mekanik', 'completed', 'reviewed'];
 const MAX_ROWS = 200;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function first(value: string | string[] | undefined): string {
   return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
@@ -34,6 +35,15 @@ export default async function AdminHistoryPage({ searchParams }: AdminHistoryPag
   // Buang karakter yang punya arti khusus di filter PostgREST supaya input tidak bisa menyisipkan kondisi lain
   const q = first(params.q).replace(/[%*,()"'\\]/g, ' ').trim().slice(0, 100);
 
+  // Filter satu mekanik (dari halaman Mekanik)
+  const rawMekanik = first(params.mekanik);
+  const mekanikId = UUID.test(rawMekanik) ? rawMekanik : '';
+  let mekanikFilter: { id: string; name: string } | null = null;
+  if (mekanikId) {
+    const { data: m } = await supabase.from('users').select('id, name').eq('id', mekanikId).single();
+    mekanikFilter = m ? { id: m.id, name: m.name ?? '-' } : null;
+  }
+
   let query = supabase
     .from('bapp')
     .select('id, unit_model, nama_customer, status, created_at, mekanik_id')
@@ -42,6 +52,10 @@ export default async function AdminHistoryPage({ searchParams }: AdminHistoryPag
 
   if (status) {
     query = query.eq('status', status);
+  }
+
+  if (mekanikFilter) {
+    query = query.eq('mekanik_id', mekanikFilter.id);
   }
 
   if (q) {
@@ -71,5 +85,7 @@ export default async function AdminHistoryPage({ searchParams }: AdminHistoryPag
     mekanikName: mekanikMap.get(b.mekanik_id) ?? 'Mekanik',
   }));
 
-  return <AdminHistoryView status={status} q={q} rows={rows} truncated={rows.length >= MAX_ROWS} />;
+  return (
+    <AdminHistoryView status={status} q={q} rows={rows} truncated={rows.length >= MAX_ROWS} mekanikFilter={mekanikFilter} />
+  );
 }

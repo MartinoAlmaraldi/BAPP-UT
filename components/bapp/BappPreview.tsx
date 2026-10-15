@@ -39,13 +39,18 @@ export default function BappPreview({ bapp }: BappPreviewProps) {
         ))}
       </div>
 
-      <div className="pbanner">
-        <CheckIcon />
-        <span>
-          Kondisi unit: {bapp.kondisi_unit === 'tidak_baik' ? 'Tidak baik' : 'Baik'} &bull;{' '}
-          {bapp.kesiapan_unit === 'tidak_siap' ? 'Tidak siap operasi' : 'Siap operasi'}
-        </span>
-      </div>
+      {(() => {
+        const bermasalah = bapp.kondisi_unit === 'tidak_baik' || bapp.kesiapan_unit === 'tidak_siap';
+        return (
+          <div className={bermasalah ? 'pbanner pbanner--bad' : 'pbanner'}>
+            {bermasalah ? <WarningIcon /> : <CheckIcon />}
+            <span>
+              Kondisi unit: {bapp.kondisi_unit === 'tidak_baik' ? 'Tidak baik' : 'Baik'} &bull;{' '}
+              {bapp.kesiapan_unit === 'tidak_siap' ? 'Tidak siap operasi' : 'Siap operasi'}
+            </span>
+          </div>
+        );
+      })()}
 
       <p className="pinfo">
         <InfoIcon />
@@ -77,6 +82,15 @@ function InfoIcon() {
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
       <circle cx="12" cy="12" r="9" />
       <path d="M12 11v5M12 8h.01" />
+    </svg>
+  );
+}
+
+function WarningIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3l10 18H2L12 3z" />
+      <path d="M12 10v5M12 18h.01" />
     </svg>
   );
 }

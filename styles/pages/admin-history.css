@@ -15,3 +15,21 @@
     margin-top: 20px;
   }
 }
+
+/* Penanda filter mekanik */
+.history__chip {
+  margin-top: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  background: #ffffff;
+  font-size: 13px;
+}
+
+.history__chip a {
+  color: var(--color-gray-text);
+  text-decoration: none;
+}
