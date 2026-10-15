@@ -369,6 +369,10 @@ textarea.finput {
   font-size: 14px;
 }
 
+.pbanner--bad {
+  background: #ffc0c0;
+}
+
 .pinfo {
   margin-top: 16px;
   display: flex;
