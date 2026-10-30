@@ -80,19 +80,13 @@ export default async function DashboardPage() {
           </div>
 
           <a href="/bapp/new" className="btn btn-primary dashboard__create">
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.2"
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              <path d="M12 5v14M5 12h14" />
-            </svg>
+            <PlusIcon />
             Buat BAPP baru
+          </a>
+
+          <a href="/mar/new" className="btn btn-primary dashboard__create">
+            <PlusIcon />
+            Buat MAR baru
           </a>
 
           <div className="dashboard__recent-head">
@@ -117,6 +111,23 @@ export default async function DashboardPage() {
 
       <BottomNav active="dashboard" />
     </div>
+  );
+}
+
+function PlusIcon() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <path d="M12 5v14M5 12h14" />
+    </svg>
   );
 }
 

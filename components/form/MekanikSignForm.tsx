@@ -45,12 +45,11 @@ export default function MekanikSignForm({ bappId, namaMekanik }: MekanikSignForm
         .upload(filePath, blob, { contentType: 'image/png', upsert: true });
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage.from('signatures').getPublicUrl(filePath);
-
+      // Yang disimpan path file (bukan URL), karena bucket signatures bersifat private
       const { error: updateError } = await supabase
         .from('bapp')
         .update({
-          signature_mekanik_url: urlData.publicUrl,
+          signature_mekanik_url: filePath,
           signed_mekanik_at: new Date().toISOString(),
           status: 'signed_mekanik',
         })
@@ -67,7 +66,7 @@ export default function MekanikSignForm({ bappId, namaMekanik }: MekanikSignForm
 
   return (
     <div className="fform">
-      <p className="flow-note">Silakan tanda tangan di area di bawah menggunakan jari atau stylus.</p>
+      <p className="flow-note">Silakan tanda tangan di area di bawah</p>
 
       <SignaturePad onChange={setSignature} disabled={loading} clearStyle="block" />
 

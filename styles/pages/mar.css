@@ -1,0 +1,60 @@
+/* Tanda bintang kolom wajib */
+.freq {
+  margin-left: 2px;
+  color: var(--color-error);
+}
+
+/* Kartu satu baris aktivitas MAR */
+.mrow {
+  margin-bottom: 18px;
+  padding: 8px 12px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  background: #ffffff;
+  scroll-margin-top: 16px;
+}
+
+.mrow--invalid {
+  border-color: var(--color-error);
+}
+
+.mrow__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 15px;
+}
+
+.mrow__delete {
+  display: flex;
+  padding: 4px;
+  border: 0;
+  background: transparent;
+  color: #000000;
+  cursor: pointer;
+}
+
+.mrow > .fgroup {
+  margin-bottom: 12px;
+}
+
+.mrow .fgrid {
+  margin-bottom: 12px;
+}
+
+.mrow .ftoggle-grid {
+  margin-bottom: 0;
+}
+
+/* Jarak tombol tambah baris ke bagian di bawahnya */
+.mar-add {
+  margin-bottom: 24px;
+}
+
+/* Pesan berhasil setelah PDF diunduh */
+.fsuccess {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #1f7a3d;
+}

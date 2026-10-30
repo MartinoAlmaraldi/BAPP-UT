@@ -57,8 +57,7 @@ export default function CustomerSignForm({ bappId, defaultNamaCustomer }: Custom
         .upload(filePath, blob, { contentType: 'image/png', upsert: true });
       if (uploadError) throw uploadError;
 
-      const { data: urlData } = supabase.storage.from('signatures').getPublicUrl(filePath);
-
+      // Yang disimpan path file (bukan URL), karena bucket signatures bersifat private
       const { error: updateError } = await supabase
         .from('bapp')
         .update({
@@ -66,7 +65,7 @@ export default function CustomerSignForm({ bappId, defaultNamaCustomer }: Custom
           status_pekerjaan: statusPekerjaan,
           catatan_customer: catatanCustomer.trim() || null,
           nama_customer_ttd: namaCustomerTtd.trim(),
-          signature_customer_url: urlData.publicUrl,
+          signature_customer_url: filePath,
           signed_customer_at: new Date().toISOString(),
           status: 'completed',
         })

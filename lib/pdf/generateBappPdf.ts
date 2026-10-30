@@ -63,6 +63,23 @@ async function fetchImageBytes(url: string): Promise<ArrayBuffer> {
   return res.arrayBuffer();
 }
 
+// Tanda tangan disimpan di bucket private "signatures". Nilai di database bisa berupa path
+// (data baru) atau URL publik lama (data lama). Diambil lewat service role, dan hanya dari
+// folder milik mekanik pemilik BAPP ini, supaya tidak bisa diarahkan ke file orang lain.
+async function fetchSignatureBytes(value: string, mekanikId: string, bappId: string): Promise<ArrayBuffer> {
+  const marker = '/signatures/';
+  const index = value.indexOf(marker);
+  const path = (value.startsWith('http') && index !== -1 ? value.slice(index + marker.length) : value).split('?')[0];
+
+  if (!path.startsWith(mekanikId + '/bapp-' + bappId + '-')) {
+    throw new Error('Path tanda tangan tidak valid');
+  }
+
+  const { data, error } = await supabaseAdmin.storage.from('signatures').download(path);
+  if (error || !data) throw new Error('Gagal ambil tanda tangan');
+  return data.arrayBuffer();
+}
+
 function formatDateTime(value: string | null): { tanggal: string; jam: string } {
   if (!value) return { tanggal: '', jam: '' };
   const d = new Date(value);
@@ -541,7 +558,7 @@ export async function generateBappPdf(bapp: BappData): Promise<Uint8Array> {
   const sigH = 55;
   if (bapp.signature_customer_url) {
     try {
-      const bytes = await fetchImageBytes(bapp.signature_customer_url);
+      const bytes = await fetchSignatureBytes(bapp.signature_customer_url, bapp.mekanik_id, bapp.id);
       const img = await pdfDoc.embedPng(bytes);
       page.drawImage(img, { x: CUST_HALF_CENTER - sigW / 2, y: fromTop(865), width: sigW, height: sigH });
     } catch (err) {
@@ -550,7 +567,7 @@ export async function generateBappPdf(bapp: BappData): Promise<Uint8Array> {
   }
   if (bapp.signature_mekanik_url) {
     try {
-      const bytes = await fetchImageBytes(bapp.signature_mekanik_url);
+      const bytes = await fetchSignatureBytes(bapp.signature_mekanik_url, bapp.mekanik_id, bapp.id);
       const img = await pdfDoc.embedPng(bytes);
       page.drawImage(img, { x: MEK_HALF_CENTER - sigW / 2, y: fromTop(865), width: sigW, height: sigH });
     } catch (err) {

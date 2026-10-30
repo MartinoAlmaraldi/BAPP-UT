@@ -85,6 +85,11 @@
   font-size: 15px;
 }
 
+/* Tombol kedua (buat MAR baru) rapat di bawah tombol pertama */
+.dashboard__create + .dashboard__create {
+  margin-top: 16px;
+}
+
 /* Daftar terbaru */
 .dashboard__recent-head {
   margin-top: 28px;
