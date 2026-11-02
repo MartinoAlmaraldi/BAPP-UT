@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import FlowHeader from '@/components/flow/FlowHeader';
+import BackGuard from '@/components/flow/BackGuard';
 import FlowFooter from '@/components/flow/FlowFooter';
 import MarCustomerSignForm from '@/components/mar/MarCustomerSignForm';
 import '@/styles/pages/flow.css';
@@ -23,7 +24,8 @@ export default async function MarCustomerPage({ params }: { params: Promise<{ id
 
   return (
     <div className="app-shell">
-      <FlowHeader title="Tanda tangan customer" backHref="/dashboard" />
+      <BackGuard />
+      <FlowHeader title="Tanda tangan customer" />
 
       <main className="flow">
         <div className="flow__inner">

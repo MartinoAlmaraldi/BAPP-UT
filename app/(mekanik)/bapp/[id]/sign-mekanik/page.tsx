@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import FlowHeader from '@/components/flow/FlowHeader';
+import BackGuard from '@/components/flow/BackGuard';
 import FlowFooter from '@/components/flow/FlowFooter';
 import MekanikSignForm from '@/components/form/MekanikSignForm';
 import '@/styles/pages/flow.css';
@@ -24,7 +25,8 @@ export default async function SignMekanikPage({ params }: { params: Promise<{ id
 
   return (
     <div className="app-shell">
-      <FlowHeader title="Tanda tangan mekanik" backHref={'/bapp/' + id + '/preview'} />
+      <BackGuard />
+      <FlowHeader title="Tanda tangan mekanik" />
 
       <main className="flow">
         <div className="flow__inner">

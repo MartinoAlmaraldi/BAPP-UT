@@ -1,6 +1,7 @@
 import { createServerClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import FlowHeader from '@/components/flow/FlowHeader';
+import BackGuard from '@/components/flow/BackGuard';
 import FlowFooter from '@/components/flow/FlowFooter';
 import MarMekanikSignForm from '@/components/mar/MarMekanikSignForm';
 import '@/styles/pages/flow.css';
@@ -24,7 +25,8 @@ export default async function MarSignMekanikPage({ params }: { params: Promise<{
 
   return (
     <div className="app-shell">
-      <FlowHeader title="Tanda tangan mekanik" backHref={'/mar/' + id + '/preview'} />
+      <BackGuard />
+      <FlowHeader title="Tanda tangan mekanik" />
 
       <main className="flow">
         <div className="flow__inner">
