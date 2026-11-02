@@ -13,10 +13,12 @@ interface BappCardProps {
   href?: string;
   /** Teks tambahan sebelum tanggal, misalnya nama mekanik (dipakai admin). */
   by?: string;
+  /** Jenis dokumen, menentukan rute default. */
+  kind?: 'bapp' | 'mar';
 }
 
-export default function BappCard({ bapp, href, by }: BappCardProps) {
-  const link = href ?? getHrefByStatus(bapp.id, bapp.status);
+export default function BappCard({ bapp, href, by, kind = 'bapp' }: BappCardProps) {
+  const link = href ?? getHrefByStatus(bapp.id, bapp.status, kind);
   const tanggal = new Date(bapp.created_at).toLocaleDateString('id-ID', {
     day: 'numeric',
     month: 'short',
@@ -36,7 +38,12 @@ export default function BappCard({ bapp, href, by }: BappCardProps) {
   );
 }
 
-function getHrefByStatus(id: string, status: string): string {
+function getHrefByStatus(id: string, status: string, kind: 'bapp' | 'mar'): string {
+  if (kind === 'mar') {
+    if (status === 'draft') return `/mar/${id}/detail`;
+    if (status === 'signed_mekanik') return `/mar/${id}/customer`;
+    return `/mar/${id}/result`;
+  }
   switch (status) {
     case 'draft':
       return `/bapp/${id}/jobdesc`;

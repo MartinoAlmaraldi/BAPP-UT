@@ -18,9 +18,9 @@ const RIGHT = 582.4;
 // Start, Finish, Durasi Hour, HM/KM, Status Job, Remark, Check
 const COLS = [24.2, 58.7, 101.0, 145.8, 202.6, 301.8, 339.9, 379.2, 418.5, 461.4, 499.6, 544.3, 582.4];
 
-const SIGN_BOX_TOP = 154.9; // kotak "Diisi Supervisor" dan "Diisi Adm."
 const HEADER_TOP = 171.3;
-const HEADER_TOP_SIGN = 183.0; // kolom Remark dan Check mulai di bawah kotak "Diisi ..."
+// Kotak "Diisi Supervisor" dan "Diisi Adm." ditumpuk di atas judul kolom Remark dan Check,
+const SIGN_BOX_TOP = 147.0;
 const BODY_TOP = 208.7;
 const BODY_BOTTOM = 826.0;
 const ROW_H = (BODY_BOTTOM - BODY_TOP) / MAX_MAR_ROWS;
@@ -178,21 +178,19 @@ function formatTanggal(value: string | null): string {
 
 // ===== GAMBAR BAGIAN-BAGIAN FORMULIR =====
 function drawGrid(page: PDFPage) {
-  // Kotak "Diisi Supervisor" dan "Diisi Adm." di atas kolom Remark dan Check
-  rect(page, COLS[10], SIGN_BOX_TOP, COLS[11] - 3, HEADER_TOP_SIGN);
-  rect(page, COLS[11] + 3, SIGN_BOX_TOP, COLS[12], HEADER_TOP_SIGN);
+  // Kotak "Diisi Supervisor" dan "Diisi Adm." duduk tepat di atas Remark dan Check, menyambung tanpa jarak
+  rect(page, COLS[10], SIGN_BOX_TOP, COLS[12], HEADER_TOP);
+  line(page, COLS[11], SIGN_BOX_TOP, COLS[11], HEADER_TOP);
 
-  // Baris judul kolom
-  rect(page, LEFT, HEADER_TOP, COLS[10], BODY_TOP);
-  rect(page, COLS[10], HEADER_TOP_SIGN, RIGHT, BODY_TOP);
+  // Baris judul kolom (semua kolom sama tinggi, termasuk Remark dan Check)
+  rect(page, LEFT, HEADER_TOP, RIGHT, BODY_TOP);
 
   // Badan tabel
   rect(page, LEFT, BODY_TOP, RIGHT, BODY_BOTTOM);
 
   // Garis antar kolom
   for (let i = 1; i < COLS.length - 1; i++) {
-    const top = i >= 10 ? HEADER_TOP_SIGN : HEADER_TOP;
-    line(page, COLS[i], top, COLS[i], BODY_BOTTOM);
+    line(page, COLS[i], HEADER_TOP, COLS[i], BODY_BOTTOM);
   }
 
   // Garis antar baris
@@ -207,8 +205,7 @@ function drawColumnHeaders(page: PDFPage, fontBold: PDFFont) {
   const leading = 8.2;
 
   HEADERS.forEach((lines, i) => {
-    const top = i >= 10 ? HEADER_TOP_SIGN : HEADER_TOP;
-    const centerTop = (top + BODY_TOP) / 2;
+    const centerTop = (HEADER_TOP + BODY_TOP) / 2;
     lines.forEach((text, j) => {
       const lineCenter = centerTop + (j - (lines.length - 1) / 2) * leading;
       centered(page, fontBold, text, COLS[i], COLS[i + 1], lineCenter + size * 0.35, size);
@@ -216,12 +213,12 @@ function drawColumnHeaders(page: PDFPage, fontBold: PDFFont) {
   });
 
   const boxes = [
-    { x1: COLS[10], x2: COLS[11] - 3, lines: ['Diisi', 'Supervisor'] },
-    { x1: COLS[11] + 3, x2: COLS[12], lines: ['Diisi', 'Adm.'] },
+    { x1: COLS[10], x2: COLS[11], lines: ['Diisi', 'Supervisor'] },
+    { x1: COLS[11], x2: COLS[12], lines: ['Diisi', 'Adm.'] },
   ];
-  const boxSize = 6.5;
-  const boxLeading = 7.5;
-  const boxCenter = (SIGN_BOX_TOP + HEADER_TOP_SIGN) / 2;
+  const boxSize = 7;
+  const boxLeading = 8.2;
+  const boxCenter = (SIGN_BOX_TOP + HEADER_TOP) / 2;
 
   boxes.forEach((b) => {
     b.lines.forEach((text, j) => {
@@ -265,13 +262,6 @@ function drawFooter(page: PDFPage, font: PDFFont, fontBold: PDFFont, boxes: Foot
     rect(page, b.x1, FOOTER_TOP, b.x2, FOOTER_BOTTOM);
     centered(page, fontBold, b.title, b.x1, b.x2, FOOTER_TOP + 17, 8);
 
-    // Gambar tanda tangan di antara judul dan baris Nama
-    if (b.signature) {
-      const dims = b.signature.scaleToFit(100, 26);
-      const cx = (b.x1 + b.x2) / 2;
-      page.drawImage(b.signature, { x: cx - dims.width / 2, y: fromTop(879), width: dims.width, height: dims.height });
-    }
-
     const rows = [
       { label: 'Nama', value: b.nama, baseline: 885.5 },
       { label: 'Jabatan', value: b.jabatan, baseline: 899 },
@@ -296,6 +286,20 @@ function drawFooter(page: PDFPage, font: PDFFont, fontBold: PDFFont, boxes: Foot
         });
       }
     });
+
+    // Tanda tangan di sisi kanan, ditumpuk di atas garis titik-titik Nama dan Jabatan
+    // (digambar terakhir supaya berada di atas garis, seperti tanda tangan di formulir kertas)
+    if (b.signature) {
+      const dims = b.signature.scaleToFit(90, 34);
+      const right = b.x2 - 14;
+      const centerTop = 887;
+      page.drawImage(b.signature, {
+        x: right - dims.width,
+        y: fromTop(centerTop + dims.height / 2),
+        width: dims.width,
+        height: dims.height,
+      });
+    }
   });
 }
 

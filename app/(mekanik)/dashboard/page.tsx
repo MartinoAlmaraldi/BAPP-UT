@@ -4,10 +4,18 @@ import { redirect } from 'next/navigation';
 import AppHeader from '@/components/layout/AppHeader';
 import BappCard from '@/components/bapp/BappCard';
 import BottomNav from '@/components/layout/BottomNav';
+import DocTypeToggle, { parseDocType } from '@/components/layout/DocTypeToggle';
 import { UserIcon } from '@/components/auth/AuthIcons';
 import '@/styles/pages/dashboard.css';
 
-export default async function DashboardPage() {
+interface DashboardPageProps {
+  searchParams: Promise<{ type?: string | string[] }>;
+}
+
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const type = parseDocType((await searchParams).type);
+  const table = type === 'mar' ? 'mar' : 'bapp';
+  const label = type === 'mar' ? 'MAR' : 'BAPP';
   const supabase = await createServerClient();
 
   const {
@@ -24,7 +32,7 @@ export default async function DashboardPage() {
   if (profile?.role === 'admin') redirect('/admin/dashboard');
 
   const { data: allBapp } = await supabase
-    .from('bapp')
+    .from(table)
     .select('id, status, created_at')
     .eq('mekanik_id', user.id);
 
@@ -45,7 +53,7 @@ export default async function DashboardPage() {
   };
 
   const { data: recentBapp } = await supabase
-    .from('bapp')
+    .from(table)
     .select('id, unit_model, nama_customer, status, created_at')
     .eq('mekanik_id', user.id)
     .order('created_at', { ascending: false })
@@ -76,7 +84,7 @@ export default async function DashboardPage() {
             <SummaryCard label="Draft" value={counts.draft} />
             <SummaryCard label="Menunggu TTD" value={counts.signedMekanik} />
             <SummaryCard label="Selesai bulan ini" value={counts.completedThisMonth} />
-            <SummaryCard label="Total BAPP" value={counts.total} />
+            <SummaryCard label={`Total ${label}`} value={counts.total} />
           </div>
 
           <a href="/bapp/new" className="btn btn-primary dashboard__create">
@@ -89,19 +97,21 @@ export default async function DashboardPage() {
             Buat MAR baru
           </a>
 
+          <DocTypeToggle active={type} hrefFor={(t) => (t === 'mar' ? '/dashboard?type=mar' : '/dashboard')} />
+
           <div className="dashboard__recent-head">
             <p className="dashboard__recent-title">Terbaru</p>
-            <a href="/history" className="dashboard__recent-link">
+            <a href={type === 'mar' ? '/history?type=mar' : '/history'} className="dashboard__recent-link">
               Lihat semua
             </a>
           </div>
 
           <div className="dashboard__list">
             {recentBapp?.map((bapp) => (
-              <BappCard key={bapp.id} bapp={bapp} />
+              <BappCard key={bapp.id} bapp={bapp} kind={type} />
             ))}
           </div>
-          {recentBapp?.length === 0 && <p className="dashboard__empty">Belum ada BAPP dibuat</p>}
+          {recentBapp?.length === 0 && <p className="dashboard__empty">Belum ada {label} dibuat</p>}
         </div>
 
         <div className="dashboard__footer">

@@ -4,11 +4,12 @@ import { redirect } from 'next/navigation';
 import AppHeader from '@/components/layout/AppHeader';
 import BappCard from '@/components/bapp/BappCard';
 import BottomNav from '@/components/layout/BottomNav';
+import DocTypeToggle, { parseDocType, type DocType } from '@/components/layout/DocTypeToggle';
 import type { BappStatus } from '@/types/bapp';
 import '@/styles/pages/history.css';
 
 interface HistoryPageProps {
-  searchParams: Promise<{ status?: string | string[]; q?: string | string[] }>;
+  searchParams: Promise<{ status?: string | string[]; q?: string | string[]; type?: string | string[] }>;
 }
 
 const VALID_STATUS: BappStatus[] = ['draft', 'signed_mekanik', 'completed', 'reviewed'];
@@ -24,8 +25,9 @@ function first(value: string | string[] | undefined): string {
   return Array.isArray(value) ? (value[0] ?? '') : (value ?? '');
 }
 
-function buildHref(status: BappStatus | undefined, q: string): string {
+function buildHref(status: BappStatus | undefined, q: string, type: DocType): string {
   const search = new URLSearchParams();
+  if (type === 'mar') search.set('type', 'mar');
   if (status) search.set('status', status);
   if (q) search.set('q', q);
   const qs = search.toString();
@@ -34,6 +36,8 @@ function buildHref(status: BappStatus | undefined, q: string): string {
 
 export default async function HistoryPage({ searchParams }: HistoryPageProps) {
   const params = await searchParams;
+  const type = parseDocType(params.type);
+  const label = type === 'mar' ? 'MAR' : 'BAPP';
   const supabase = await createServerClient();
 
   const {
@@ -49,7 +53,7 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
   const q = first(params.q).replace(/[%*,()"'\\]/g, ' ').trim().slice(0, 100);
 
   let query = supabase
-    .from('bapp')
+    .from(type)
     .select('id, unit_model, nama_customer, status, created_at')
     .eq('mekanik_id', user.id)
     .order('created_at', { ascending: false });
@@ -66,10 +70,11 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
   return (
     <div className="app-shell">
       <AppHeader>
-        <h1 className="history__title">History BAPP</h1>
+        <h1 className="history__title">History {label}</h1>
 
         <form className="history__search" method="get" action="/history">
           {status && <input type="hidden" name="status" value={status} />}
+          {type === 'mar' && <input type="hidden" name="type" value="mar" />}
           <button type="submit" className="history__search-btn" aria-label="Cari">
             <SearchIcon />
           </button>
@@ -86,13 +91,15 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
 
       <main className="history">
         <div className="history__inner">
+          <DocTypeToggle active={type} hrefFor={(t) => buildHref(status, q, t)} />
+
           <div className="history__filters">
             {FILTERS.map((f) => {
               const isActive = status === f.value;
               return (
                 <a
                   key={f.label}
-                  href={buildHref(f.value, q)}
+                  href={buildHref(f.value, q, type)}
                   className={isActive ? 'filter-pill filter-pill--active' : 'filter-pill'}
                 >
                   {f.label}
@@ -103,10 +110,10 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
 
           <div className="history__list">
             {bappList?.map((bapp) => (
-              <BappCard key={bapp.id} bapp={bapp} />
+              <BappCard key={bapp.id} bapp={bapp} kind={type} />
             ))}
           </div>
-          {bappList?.length === 0 && <p className="history__empty">Tidak ada BAPP ditemukan</p>}
+          {bappList?.length === 0 && <p className="history__empty">Tidak ada {label} ditemukan</p>}
         </div>
 
         <div className="history__footer">
