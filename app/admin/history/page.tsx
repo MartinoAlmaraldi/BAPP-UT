@@ -2,10 +2,16 @@ import { createServerClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import AdminHistoryView from '@/components/bapp/AdminHistoryView';
 import type { AdminBappRow } from '@/components/bapp/AdminBappTable';
+import { parseDocType } from '@/components/layout/DocTypeToggle';
 import type { BappStatus } from '@/types/bapp';
 
 interface AdminHistoryPageProps {
-  searchParams: Promise<{ status?: string | string[]; q?: string | string[]; mekanik?: string | string[] }>;
+  searchParams: Promise<{
+    status?: string | string[];
+    q?: string | string[];
+    mekanik?: string | string[];
+    type?: string | string[];
+  }>;
 }
 
 const VALID_STATUS: BappStatus[] = ['draft', 'signed_mekanik', 'completed', 'reviewed'];
@@ -18,6 +24,8 @@ function first(value: string | string[] | undefined): string {
 
 export default async function AdminHistoryPage({ searchParams }: AdminHistoryPageProps) {
   const params = await searchParams;
+  // ?type=mar menampilkan MAR, selain itu BAPP
+  const type = parseDocType(params.type);
   const supabase = await createServerClient();
 
   const {
@@ -45,7 +53,7 @@ export default async function AdminHistoryPage({ searchParams }: AdminHistoryPag
   }
 
   let query = supabase
-    .from('bapp')
+    .from(type)
     .select('id, unit_model, nama_customer, status, created_at, mekanik_id')
     .order('created_at', { ascending: false })
     .limit(MAX_ROWS);
@@ -86,6 +94,13 @@ export default async function AdminHistoryPage({ searchParams }: AdminHistoryPag
   }));
 
   return (
-    <AdminHistoryView status={status} q={q} rows={rows} truncated={rows.length >= MAX_ROWS} mekanikFilter={mekanikFilter} />
+    <AdminHistoryView
+      type={type}
+      status={status}
+      q={q}
+      rows={rows}
+      truncated={rows.length >= MAX_ROWS}
+      mekanikFilter={mekanikFilter}
+    />
   );
 }

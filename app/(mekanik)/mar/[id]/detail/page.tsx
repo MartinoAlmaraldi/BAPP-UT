@@ -16,7 +16,7 @@ export default async function MarDetailPage({ params }: { params: Promise<{ id: 
 
   const { data: mar } = await supabase
     .from('mar')
-    .select('id, status, wo_number, no_operation, smr, rows:mar_rows(job_description, start_time, finish_time, status_job, urutan)')
+    .select('id, status, wo_number, no_operation, smr, rows:mar_rows(job_description, start_time, finish_time, status_job, unit_model, unit_serial_no, urutan)')
     .eq('id', id)
     .single();
 

@@ -1,0 +1,104 @@
+/* ===== Detail BAPP / MAR untuk admin =====
+   Memakai kerangka halaman Detail mekanik (mk-page, mkd-info, mkd-btn) */
+
+/* Kartu judul: unit, customer, dan status */
+.ad-head {
+  margin-top: 20px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.ad-head__kind {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-gray-text);
+  letter-spacing: 0.04em;
+}
+
+.ad-head__title {
+  margin-top: 2px;
+  font-size: 18px;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.ad-head__sub {
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--color-gray-text);
+  word-break: break-word;
+}
+
+.ad-head .status-badge {
+  flex: none;
+  margin-top: 2px;
+}
+
+/* Kartu daftar pekerjaan */
+.ad-card {
+  margin-top: 10px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.ad-job {
+  padding: 12px 18px;
+  border-top: 1px solid #ececec;
+}
+
+.ad-job:first-child {
+  border-top: 0;
+}
+
+.ad-job__unit {
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-gray-text);
+}
+
+.ad-job__title {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.ad-job__meta {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-gray-text);
+}
+
+.ad-empty {
+  padding: 14px 18px;
+  font-size: 13px;
+  color: #9a9a9a;
+}
+
+/* Catatan mekanik / customer */
+.ad-note {
+  padding: 12px 18px;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Keterangan PDF belum tersedia */
+.ad-hint {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 6px;
+  background: #f5f5f5;
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-gray-text);
+}

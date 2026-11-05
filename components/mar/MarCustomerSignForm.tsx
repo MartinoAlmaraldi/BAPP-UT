@@ -6,6 +6,7 @@ import { createBrowserClient } from '@/lib/supabase/client';
 import { errorMessage } from '@/lib/errorMessage';
 import SignaturePad from '@/components/signature/SignaturePad';
 import '@/styles/pages/flow.css';
+import '@/styles/pages/mar.css';
 
 interface MarCustomerSignFormProps {
   marId: string;
@@ -17,6 +18,8 @@ export default function MarCustomerSignForm({ marId, defaultNamaCustomer }: MarC
   const supabase = createBrowserClient();
 
   const [namaCustomer, setNamaCustomer] = useState(defaultNamaCustomer);
+  // Kosong berarti di PDF tertulis "Customer"
+  const [jabatan, setJabatan] = useState('');
   const [signature, setSignature] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -55,6 +58,7 @@ export default function MarCustomerSignForm({ marId, defaultNamaCustomer }: MarC
         .from('mar')
         .update({
           nama_customer_ttd: namaCustomer.trim(),
+          jabatan_customer: jabatan.trim() || null,
           signature_customer_url: filePath,
           signed_customer_at: new Date().toISOString(),
           status: 'completed',
@@ -86,6 +90,20 @@ export default function MarCustomerSignForm({ marId, defaultNamaCustomer }: MarC
           className="finput"
           value={namaCustomer}
           onChange={(e) => setNamaCustomer(e.target.value)}
+        />
+      </div>
+
+      <div className="fgroup">
+        <label className="flabel flabel--muted" htmlFor="jabatan_customer">
+          Jabatan <span className="fopt">(opsional)</span>
+        </label>
+        <input
+          id="jabatan_customer"
+          type="text"
+          className="finput"
+          placeholder="Customer"
+          value={jabatan}
+          onChange={(e) => setJabatan(e.target.value)}
         />
       </div>
 

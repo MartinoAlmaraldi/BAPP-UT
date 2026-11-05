@@ -10,8 +10,9 @@ export interface AdminBappRow {
   mekanikName: string;
 }
 
-// Tabel BAPP untuk layar desktop (disembunyikan lewat CSS di mobile dan tablet)
-export default function AdminBappTable({ rows }: { rows: AdminBappRow[] }) {
+// Tabel BAPP / MAR untuk layar desktop (disembunyikan lewat CSS di mobile dan tablet).
+// hrefBase menentukan halaman detail, misalnya "/admin/bapp/" atau "/admin/mar/".
+export default function AdminBappTable({ rows, hrefBase = '/admin/bapp/' }: { rows: AdminBappRow[]; hrefBase?: string }) {
   if (rows.length === 0) return null;
 
   return (
@@ -24,7 +25,7 @@ export default function AdminBappTable({ rows }: { rows: AdminBappRow[] }) {
         <span className="admin-table__status">Status</span>
       </div>
       {rows.map((row) => (
-        <a key={row.id} href={'/admin/bapp/' + row.id} className="admin-table__row">
+        <a key={row.id} href={hrefBase + row.id} className="admin-table__row">
           <span className="admin-table__unit">{row.unit_model ?? '(belum diisi)'}</span>
           <span>{row.nama_customer ?? '(belum diisi)'}</span>
           <span className="admin-table__muted">{row.mekanikName}</span>

@@ -2,11 +2,19 @@ import { createServerClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
 import MekanikDetailView from '@/components/admin/MekanikDetailView';
 import { buildStatsMap, emptyStats, type BappStatRow } from '@/lib/mekanikStats';
+import { parseDocType } from '@/components/layout/DocTypeToggle';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export default async function AdminMekanikDetailPage({ params }: { params: Promise<{ id: string }> }) {
+interface AdminMekanikDetailPageProps {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ type?: string | string[] }>;
+}
+
+export default async function AdminMekanikDetailPage({ params, searchParams }: AdminMekanikDetailPageProps) {
   const { id } = await params;
+  // ?type=mar menampilkan ringkasan dan daftar MAR, selain itu BAPP
+  const type = parseDocType((await searchParams).type);
   if (!UUID.test(id)) notFound();
 
   const supabase = await createServerClient();
@@ -27,7 +35,7 @@ export default async function AdminMekanikDetailPage({ params }: { params: Promi
   if (!target) notFound();
 
   const { data: bappRows } = await supabase
-    .from('bapp')
+    .from(type)
     .select('id, unit_model, nama_customer, status, created_at, updated_at, signed_customer_at, mekanik_id')
     .eq('mekanik_id', id)
     .order('created_at', { ascending: false });
@@ -38,6 +46,7 @@ export default async function AdminMekanikDetailPage({ params }: { params: Promi
   return (
     <MekanikDetailView
       id={target.id}
+      type={type}
       name={target.name ?? ''}
       email={target.email ?? ''}
       role={target.role === 'admin' ? 'admin' : 'mekanik'}

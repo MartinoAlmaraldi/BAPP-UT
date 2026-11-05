@@ -1,4 +1,4 @@
-import { formatDurasiRingkas, hitungDurasiMenit, jamTampil } from '@/lib/mar';
+import { formatDurasiRingkas, hitungDurasiMenit, jamTampil, kelompokWaktu } from '@/lib/mar';
 import '@/styles/pages/flow.css';
 
 interface MarPreviewProps {
@@ -19,12 +19,19 @@ interface MarPreviewProps {
       start_time: string | null;
       finish_time: string | null;
       status_job: string | null;
+      unit_model?: string | null;
+      unit_serial_no?: string | null;
+      gabung_waktu?: boolean | null;
     }[];
   };
 }
 
 export default function MarPreview({ mar }: MarPreviewProps) {
   const signHref = '/mar/' + mar.id + '/sign-mekanik';
+
+  // Baris pertama tiap kelompok waktu, untuk menampilkan durasi sekali saja
+  const groups = kelompokWaktu(mar.rows);
+  const akhirKelompok = new Map(groups.map(([awal, akhir]) => [awal, akhir]));
 
   const tanggal = mar.tanggal
     ? new Date(mar.tanggal).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -59,14 +66,29 @@ export default function MarPreview({ mar }: MarPreviewProps) {
         <p className="pcard__label">Detail pekerjaan ({mar.rows.length})</p>
         <hr className="pcard__rule" />
         {mar.rows.length === 0 && <p className="pcard__empty">Belum ada rincian pekerjaan</p>}
-        {mar.rows.map((row) => {
+        {mar.rows.map((row, index) => {
           const menit = hitungDurasiMenit(row.start_time, row.finish_time);
           const status = row.status_job === 'F' ? ' \u2022 Finish' : row.status_job === 'NF' ? ' \u2022 Not Finish' : '';
+          const akhir = akhirKelompok.get(index);
+          const waktu =
+            akhir === undefined
+              ? 'Waktu sama dengan baris di atas'
+              : jamTampil(row.start_time) +
+                ' - ' +
+                jamTampil(row.finish_time) +
+                ' \u2022 ' +
+                formatDurasiRingkas(menit) +
+                (akhir > index ? ' (baris ' + (index + 1) + '\u2013' + (akhir + 1) + ')' : '');
           return (
             <div key={row.id} className="pjob">
+              {(row.unit_model || row.unit_serial_no) && (
+                <p className="pjob__remarks">
+                  Unit: {row.unit_model ?? '-'} / {row.unit_serial_no ?? '-'}
+                </p>
+              )}
               <p className="pjob__title">{row.job_description ?? '-'}</p>
               <p className="pjob__remarks">
-                {jamTampil(row.start_time) + ' - ' + jamTampil(row.finish_time) + ' \u2022 ' + formatDurasiRingkas(menit) + status}
+                {waktu + status}
               </p>
             </div>
           );

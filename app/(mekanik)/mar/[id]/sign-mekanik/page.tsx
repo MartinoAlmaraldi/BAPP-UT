@@ -4,6 +4,7 @@ import FlowHeader from '@/components/flow/FlowHeader';
 import BackGuard from '@/components/flow/BackGuard';
 import FlowFooter from '@/components/flow/FlowFooter';
 import MarMekanikSignForm from '@/components/mar/MarMekanikSignForm';
+import { namaUtama } from '@/lib/mar';
 import '@/styles/pages/flow.css';
 
 export default async function MarSignMekanikPage({ params }: { params: Promise<{ id: string }> }) {
@@ -30,7 +31,7 @@ export default async function MarSignMekanikPage({ params }: { params: Promise<{
 
       <main className="flow">
         <div className="flow__inner">
-          <MarMekanikSignForm marId={id} namaMekanik={mar.nama ?? profile?.name ?? ''} />
+          <MarMekanikSignForm marId={id} namaMekanik={namaUtama(mar.nama) || profile?.name || ''} />
         </div>
         <FlowFooter />
       </main>

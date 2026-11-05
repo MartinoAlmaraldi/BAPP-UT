@@ -1,7 +1,7 @@
 import { PDFDocument, StandardFonts, rgb, PDFFont, PDFImage, PDFPage } from 'pdf-lib';
 import { createClient } from '@supabase/supabase-js';
 import { PAGE_WIDTH, PAGE_HEIGHT } from './coordinates';
-import { formatDurasiDesimal, hitungDurasiMenit, jamInput } from '@/lib/mar';
+import { formatDurasiDesimal, hitungDurasiMenit, jamInput, kelompokWaktu, namaUtama } from '@/lib/mar';
 import { MAX_MAR_ROWS } from '@/lib/validation/marSchema';
 
 const supabaseAdmin = createClient(
@@ -19,7 +19,7 @@ const RIGHT = 582.4;
 const COLS = [24.2, 58.7, 101.0, 145.8, 202.6, 301.8, 339.9, 379.2, 418.5, 461.4, 499.6, 544.3, 582.4];
 
 const HEADER_TOP = 171.3;
-// Kotak "Diisi Supervisor" dan "Diisi Adm." ditumpuk di atas judul kolom Remark dan Check,
+// Kotak "Diisi Supervisor" dan "Diisi Adm." ditumpuk di atas judul kolom Remark dan Check
 const SIGN_BOX_TOP = 147.0;
 const BODY_TOP = 208.7;
 const BODY_BOTTOM = 826.0;
@@ -59,6 +59,7 @@ export interface MarPdfData {
   smr: string | null;
   signature_mekanik_url: string | null;
   nama_customer_ttd: string | null;
+  jabatan_customer?: string | null;
   signature_customer_url: string | null;
   rows: {
     urutan: number;
@@ -66,6 +67,9 @@ export interface MarPdfData {
     start_time: string | null;
     finish_time: string | null;
     status_job: string | null;
+    unit_model?: string | null;
+    unit_serial_no?: string | null;
+    gabung_waktu?: boolean | null;
   }[];
 }
 
@@ -170,6 +174,29 @@ function drawCell(page: PDFPage, font: PDFFont, text: string, colIndex: number, 
   });
 }
 
+// Kolom Unit Model SN versi rapat: model dan SN dalam satu baris tabel.
+// Hanya dipakai kalau baris di bawahnya sudah ditempati unit lain.
+function drawUnitCell(page: PDFPage, font: PDFFont, model: string, sn: string, rowTop: number) {
+  const x1 = COLS[1];
+  const x2 = COLS[2];
+  const pad = 2;
+  const maxWidth = x2 - x1 - pad * 2;
+  const lines = [model, sn].filter(Boolean);
+  if (lines.length === 0) return;
+
+  // Ukuran huruf dikecilkan sampai muat, sisanya dipotong "..."
+  let size = 6;
+  while (size > 4.75 && lines.some((t) => font.widthOfTextAtSize(t, size) > maxWidth)) size -= 0.25;
+  const leading = size * 1.1;
+  const centerTop = rowTop + ROW_H / 2;
+
+  lines.forEach((text, i) => {
+    const lineText = truncate(font, text, maxWidth, size);
+    const lineCenter = centerTop + (i - (lines.length - 1) / 2) * leading;
+    page.drawText(lineText, { x: x1 + pad, y: fromTop(lineCenter + size * 0.35), size, font });
+  });
+}
+
 function formatTanggal(value: string | null): string {
   if (!value) return '';
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
@@ -228,6 +255,44 @@ function drawColumnHeaders(page: PDFPage, fontBold: PDFFont) {
   });
 }
 
+// Bungkus daftar "A / B / C" jadi beberapa baris. Sebisa mungkin dipotong di pemisah " / ",
+// jadi satu nama atau NRP tidak terbelah. Kalau satu nama saja sudah terlalu panjang, dipotong per kata.
+function wrapDaftar(font: PDFFont, text: string, maxWidth: number, size: number): string[] {
+  const parts = text.split(/\s*\/\s*/).filter(Boolean);
+  const lines: string[] = [];
+  const lebar = (t: string) => font.widthOfTextAtSize(t, size);
+  // Sisakan tempat untuk " /" di akhir baris yang bersambung
+  const batas = maxWidth - lebar(' /');
+  let current = '';
+
+  for (const part of parts) {
+    const candidate = current ? current + ' / ' + part : part;
+    if (lebar(candidate) <= batas) {
+      current = candidate;
+      continue;
+    }
+    if (current) lines.push(current + ' /');
+    if (lebar(part) <= batas) {
+      current = part;
+    } else {
+      const pecahan = wrapText(font, part, batas, size);
+      lines.push(...pecahan.slice(0, -1));
+      current = pecahan[pecahan.length - 1] ?? '';
+    }
+  }
+  if (current) lines.push(current);
+  return lines.length > 0 ? lines : [''];
+}
+
+// Area Name dan NRP di bawah judul. Nilai yang panjang turun ke baris berikutnya,
+// rata kiri dengan nilai baris pertama, dan tidak boleh menyentuh tabel di bawahnya.
+const INFO_VALUE_X = 297;
+const INFO_VALUE_MAX = 190; // berhenti sebelum kotak "Diisi Supervisor"
+const INFO_TOP_MIN = 98; // baris paling atas, di bawah judul "(MAR)"
+const INFO_LAST_MAX = 158; // baris NRP terakhir, garis bawahnya tetap di atas tabel
+const NAME_BASELINE = 123;
+const NAME_TO_NRP = 21; // jarak Name ke NRP seperti formulir asli
+
 function drawTop(page: PDFPage, font: PDFFont, fontBold: PDFFont, logo: PDFImage | null, nama: string, nrp: string) {
   if (logo) {
     page.drawImage(logo, { x: 23, y: fromTop(58), width: 32, height: 32 });
@@ -238,14 +303,53 @@ function drawTop(page: PDFPage, font: PDFFont, fontBold: PDFFont, logo: PDFImage
   centered(page, fontBold, 'MECHANIC ACTIVITY REPORT', 0, PAGE_WIDTH, 71, 10);
   centered(page, fontBold, '(MAR)', 0, PAGE_WIDTH, 82, 10);
 
-  page.drawText('Name', { x: 246.8, y: fromTop(123), size: 8, font: fontBold });
-  page.drawText(':', { x: 289, y: fromTop(123), size: 8, font: fontBold });
-  page.drawText(truncate(font, nama, 100, 8), { x: 297, y: fromTop(123), size: 8, font });
+  // Cari ukuran huruf terbesar yang muat. Kalau sampai ukuran terkecil masih tidak muat, baris sisanya dipotong "..."
+  let size = 8;
+  let namaLines: string[] = [];
+  let nrpLines: string[] = [];
+  let lead = 0;
+  let namaTop = NAME_BASELINE;
 
-  page.drawText('NRP', { x: 246.8, y: fromTop(144), size: 8, font: fontBold });
-  page.drawText(':', { x: 289, y: fromTop(144), size: 8, font: fontBold });
-  page.drawText(truncate(font, nrp, 100, 8), { x: 297, y: fromTop(144), size: 8, font });
-  line(page, 243, 150.2, 400, 150.2, 0.9);
+  while (true) {
+    lead = size * 1.25;
+    namaLines = wrapDaftar(font, nama, INFO_VALUE_MAX, size);
+    nrpLines = wrapDaftar(font, nrp, INFO_VALUE_MAX, size);
+    const tinggi = (namaLines.length - 1) * lead + NAME_TO_NRP + (nrpLines.length - 1) * lead;
+    // Utamakan posisi asli; kalau tidak cukup, seluruh blok digeser ke atas
+    namaTop = Math.min(NAME_BASELINE, INFO_LAST_MAX - tinggi);
+    if (namaTop >= INFO_TOP_MIN || size <= 6) break;
+    size -= 0.5;
+  }
+
+  if (namaTop < INFO_TOP_MIN) {
+    // Ukuran terkecil pun tidak muat: batasi jumlah baris
+    const maxBaris = Math.max(2, Math.floor((INFO_LAST_MAX - INFO_TOP_MIN - NAME_TO_NRP) / lead) + 2);
+    const potong = (lines: string[], max: number) =>
+      lines.length <= max ? lines : [...lines.slice(0, max - 1), truncate(font, lines.slice(max - 1).join(' '), INFO_VALUE_MAX, size)];
+    const jatahNama = Math.max(1, Math.ceil(maxBaris / 2));
+    namaLines = potong(namaLines, jatahNama);
+    nrpLines = potong(nrpLines, Math.max(1, maxBaris - namaLines.length));
+    namaTop = INFO_TOP_MIN;
+  }
+
+  const nrpTop = namaTop + (namaLines.length - 1) * lead + NAME_TO_NRP;
+
+  page.drawText('Name', { x: 246.8, y: fromTop(namaTop), size: 8, font: fontBold });
+  page.drawText(':', { x: 289, y: fromTop(namaTop), size: 8, font: fontBold });
+  namaLines.forEach((text, i) => {
+    page.drawText(text, { x: INFO_VALUE_X, y: fromTop(namaTop + i * lead), size, font });
+  });
+
+  page.drawText('NRP', { x: 246.8, y: fromTop(nrpTop), size: 8, font: fontBold });
+  page.drawText(':', { x: 289, y: fromTop(nrpTop), size: 8, font: fontBold });
+  nrpLines.forEach((text, i) => {
+    page.drawText(text, { x: INFO_VALUE_X, y: fromTop(nrpTop + i * lead), size, font });
+  });
+
+  // Garis bawah tepat di bawah NRP terakhir, memanjang mengikuti teks terlebar
+  const lineTop = Math.max(150.2, nrpTop + (nrpLines.length - 1) * lead + 6.2);
+  const terlebar = Math.max(...namaLines.concat(nrpLines).map((t) => font.widthOfTextAtSize(t, size)));
+  line(page, 243, lineTop, Math.max(400, INFO_VALUE_X + terlebar + 6), lineTop, 0.9);
 }
 
 interface FooterBox {
@@ -365,26 +469,64 @@ export async function generateMarPdf(data: MarPdfData): Promise<Uint8Array> {
   drawColumnHeaders(page, fontBold);
   drawTop(page, font, fontBold, logo, clean(data.nama), clean(data.nrp));
 
-  const unitText = clean([data.unit_model, data.unit_serial_no].filter((v) => v && v.trim()).join(' / '));
   const tanggalText = clean(formatTanggal(data.tanggal));
   const sortedRows = [...data.rows].sort((a, b) => a.urutan - b.urutan).slice(0, MAX_MAR_ROWS);
 
+  // Unit Model dan SN ditulis sekali di awal, lalu lagi hanya di baris yang unit / SN-nya berganti.
+  // Model di baris itu, SN di baris berikutnya (memakai 2 baris tabel).
+  const unitMulai: { row: number; model: string; sn: string }[] = [];
+  let unitAktif = { model: clean(data.unit_model), sn: clean(data.unit_serial_no) };
+  if (sortedRows.length > 0) unitMulai.push({ row: 0, ...unitAktif });
+
+  sortedRows.forEach((row, i) => {
+    if (i === 0 || !(row.unit_model || row.unit_serial_no)) return;
+    const baru = {
+      model: clean(row.unit_model) || unitAktif.model,
+      sn: clean(row.unit_serial_no) || unitAktif.sn,
+    };
+    if (baru.model !== unitAktif.model || baru.sn !== unitAktif.sn) {
+      unitAktif = baru;
+      unitMulai.push({ row: i, ...baru });
+    }
+  });
+
+  unitMulai.forEach((u, j) => {
+    const top = BODY_TOP + u.row * ROW_H;
+    const barisBerikut = unitMulai[j + 1]?.row ?? Infinity;
+    if (u.row + 1 < barisBerikut && u.row + 1 < MAX_MAR_ROWS) {
+      drawCell(page, font, u.model, 1, top, 'left');
+      drawCell(page, font, u.sn, 1, top + ROW_H, 'left');
+    } else {
+      // Baris berikutnya sudah dipakai unit lain: model dan SN dirapatkan dalam satu baris
+      drawUnitCell(page, font, u.model, u.sn, top);
+    }
+  });
+
   sortedRows.forEach((row, i) => {
     const rowTop = BODY_TOP + i * ROW_H;
-    const menit = hitungDurasiMenit(row.start_time, row.finish_time);
 
-    drawCell(page, font, tanggalText, 0, rowTop, 'center');
-    drawCell(page, font, unitText, 1, rowTop, 'left');
-    drawCell(page, font, clean(data.wo_number), 2, rowTop, 'left');
+    // Date dan WO Number cukup ditulis sekali di baris pertama
+    if (i === 0) {
+      drawCell(page, font, tanggalText, 0, rowTop, 'center');
+      drawCell(page, font, clean(data.wo_number), 2, rowTop, 'left');
+    }
     drawCell(page, font, clean(data.no_operation), 3, rowTop, 'left');
     drawCell(page, font, clean(row.job_description), 4, rowTop, 'left');
+    // Start dan Finish selalu ditulis di setiap baris. Baris yang dicentang "samakan" berisi waktu yang sama.
     drawCell(page, font, clean(jamInput(row.start_time)), 5, rowTop, 'center');
     drawCell(page, font, clean(jamInput(row.finish_time)), 6, rowTop, 'center');
-    drawCell(page, font, clean(formatDurasiDesimal(menit)), 7, rowTop, 'center');
-    drawCell(page, font, clean(data.smr), 8, rowTop, 'center');
     drawCell(page, font, clean(row.status_job), 9, rowTop, 'center');
     // Kolom Remark (supervisor) dan Check (admin) dikosongkan, diisi manual
   });
+
+  // Durasi dan HM/KM ditulis sekali per kelompok waktu (di baris pertama kelompok)
+  for (const [awal] of kelompokWaktu(sortedRows)) {
+    const lead = sortedRows[awal];
+    const topAwal = BODY_TOP + awal * ROW_H;
+    const menit = hitungDurasiMenit(lead.start_time, lead.finish_time);
+    drawCell(page, font, clean(formatDurasiDesimal(menit)), 7, topAwal, 'center');
+    drawCell(page, font, clean(data.smr), 8, topAwal, 'center');
+  }
 
   drawFooter(page, font, fontBold, [
     {
@@ -392,14 +534,15 @@ export async function generateMarPdf(data: MarPdfData): Promise<Uint8Array> {
       x2: 266.0,
       title: 'Mengetahui',
       nama: clean(data.nama_customer_ttd ?? data.nama_customer),
-      jabatan: 'Customer',
+      jabatan: clean(data.jabatan_customer) || 'Customer',
       signature: sigCustomer,
     },
     {
       x1: 337.5,
       x2: 563.7,
       title: 'Dibuat Oleh',
-      nama: clean(data.nama),
+      // Kalau mekanik lebih dari satu, kotak tanda tangan hanya memakai nama paling depan
+      nama: clean(namaUtama(data.nama)),
       jabatan: 'Mekanik',
       signature: sigMekanik,
     },
@@ -409,7 +552,7 @@ export async function generateMarPdf(data: MarPdfData): Promise<Uint8Array> {
 }
 
 function buildFileName(data: MarPdfData): string {
-  const nama = (data.nama ?? '')
+  const nama = namaUtama(data.nama)
     .trim()
     .replace(/[^A-Za-z0-9_-]+/g, '-')
     .replace(/^-+|-+$/g, '');

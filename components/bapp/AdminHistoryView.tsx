@@ -3,18 +3,21 @@ import AppHeader from '@/components/layout/AppHeader';
 import BappCard from '@/components/bapp/BappCard';
 import AdminBappTable, { type AdminBappRow } from '@/components/bapp/AdminBappTable';
 import AdminBottomNav from '@/components/layout/AdminBottomNav';
+import DocTypeToggle, { type DocType } from '@/components/layout/DocTypeToggle';
 import type { BappStatus } from '@/types/bapp';
 import '@/styles/pages/history.css';
 import '@/styles/pages/admin.css';
 import '@/styles/pages/admin-history.css';
 
 interface AdminHistoryViewProps {
+  /** Jenis dokumen yang ditampilkan: BAPP atau MAR */
+  type: DocType;
   status?: BappStatus;
   q: string;
   rows: AdminBappRow[];
   /** true kalau hasil dipotong oleh batas jumlah baris */
   truncated: boolean;
-  /** Kalau ada, hanya BAPP milik mekanik ini yang ditampilkan */
+  /** Kalau ada, hanya BAPP / MAR milik mekanik ini yang ditampilkan */
   mekanikFilter?: { id: string; name: string } | null;
 }
 
@@ -25,8 +28,9 @@ const FILTERS: { label: string; value: BappStatus | undefined }[] = [
   { label: 'Selesai', value: 'completed' },
 ];
 
-function buildHref(status: BappStatus | undefined, q: string, mekanikId?: string): string {
+function buildHref(type: DocType, status: BappStatus | undefined, q: string, mekanikId?: string): string {
   const search = new URLSearchParams();
+  if (type === 'mar') search.set('type', 'mar');
   if (status) search.set('status', status);
   if (q) search.set('q', q);
   if (mekanikId) search.set('mekanik', mekanikId);
@@ -34,15 +38,19 @@ function buildHref(status: BappStatus | undefined, q: string, mekanikId?: string
   return qs ? `/admin/history?${qs}` : '/admin/history';
 }
 
-export default function AdminHistoryView({ status, q, rows, truncated, mekanikFilter }: AdminHistoryViewProps) {
+export default function AdminHistoryView({ type, status, q, rows, truncated, mekanikFilter }: AdminHistoryViewProps) {
+  const label = type === 'mar' ? 'MAR' : 'BAPP';
+  const detailBase = type === 'mar' ? '/admin/mar/' : '/admin/bapp/';
+
   return (
     <div className="app-shell">
       <AppHeader>
-        <h1 className="history__title">History BAPP</h1>
+        <h1 className="history__title">History {label}</h1>
 
         <form className="history__search" method="get" action="/admin/history">
           {status && <input type="hidden" name="status" value={status} />}
           {mekanikFilter && <input type="hidden" name="mekanik" value={mekanikFilter.id} />}
+          {type === 'mar' && <input type="hidden" name="type" value="mar" />}
           <button type="submit" className="history__search-btn" aria-label="Cari">
             <SearchIcon />
           </button>
@@ -59,10 +67,12 @@ export default function AdminHistoryView({ status, q, rows, truncated, mekanikFi
 
       <main className="history">
         <div className="history__inner">
+          <DocTypeToggle active={type} hrefFor={(t) => buildHref(t, status, q, mekanikFilter?.id)} />
+
           {mekanikFilter && (
             <div className="history__chip">
               <span>Mekanik: {mekanikFilter.name}</span>
-              <a href={buildHref(status, q)} aria-label="Hapus filter mekanik">
+              <a href={buildHref(type, status, q)} aria-label="Hapus filter mekanik">
                 &#10005;
               </a>
             </div>
@@ -74,7 +84,7 @@ export default function AdminHistoryView({ status, q, rows, truncated, mekanikFi
               return (
                 <a
                   key={f.label}
-                  href={buildHref(f.value, q, mekanikFilter?.id)}
+                  href={buildHref(type, f.value, q, mekanikFilter?.id)}
                   className={isActive ? 'filter-pill filter-pill--active' : 'filter-pill'}
                 >
                   {f.label}
@@ -86,15 +96,15 @@ export default function AdminHistoryView({ status, q, rows, truncated, mekanikFi
           {/* Mobile dan tablet: kartu */}
           <div className="admin__list admin__list--cards">
             {rows.map((row) => (
-              <BappCard key={row.id} bapp={row} href={'/admin/bapp/' + row.id} by={row.mekanikName} />
+              <BappCard key={row.id} bapp={row} href={detailBase + row.id} by={row.mekanikName} />
             ))}
           </div>
 
           {/* Desktop: tabel */}
-          <AdminBappTable rows={rows} />
+          <AdminBappTable rows={rows} hrefBase={detailBase} />
 
-          {rows.length === 0 && <p className="history__empty">Tidak ada BAPP ditemukan</p>}
-          {truncated && <p className="history__note">Menampilkan 200 BAPP terbaru. Persempit dengan pencarian atau filter.</p>}
+          {rows.length === 0 && <p className="history__empty">Tidak ada {label} ditemukan</p>}
+          {truncated && <p className="history__note">Menampilkan 200 {label} terbaru. Persempit dengan pencarian atau filter.</p>}
         </div>
 
         <div className="history__footer">

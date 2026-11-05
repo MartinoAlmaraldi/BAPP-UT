@@ -4,18 +4,27 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createBrowserClient } from '@/lib/supabase/client';
 import { errorMessage } from '@/lib/errorMessage';
-import { formatDurasiPanjang, hitungDurasiMenit, jamInput } from '@/lib/mar';
+import { formatDurasiPanjang, hitungDurasiMenit, jamInput, kelompokWaktu } from '@/lib/mar';
 import { MAX_MAR_ROWS, marDetailSchema } from '@/lib/validation/marSchema';
 import '@/styles/pages/flow.css';
 import '@/styles/pages/mar.css';
 
-type RowField = 'job_description' | 'start_time' | 'finish_time' | 'status_job';
-type MarRow = Record<RowField, string>;
+type RowField = 'job_description' | 'start_time' | 'finish_time' | 'status_job' | 'unit_model' | 'unit_serial_no';
+type MarRow = Record<RowField, string> & { ganti_unit: boolean; gabung_waktu: boolean };
 type RowErrors = Partial<Record<RowField, string>>;
 type Action = 'draft' | 'next' | null;
 
-const ROW_FIELDS: RowField[] = ['job_description', 'start_time', 'finish_time', 'status_job'];
-const EMPTY_ROW: MarRow = { job_description: '', start_time: '', finish_time: '', status_job: '' };
+const ROW_FIELDS: RowField[] = ['job_description', 'start_time', 'finish_time', 'status_job', 'unit_model', 'unit_serial_no'];
+const EMPTY_ROW: MarRow = {
+  job_description: '',
+  start_time: '',
+  finish_time: '',
+  status_job: '',
+  ganti_unit: false,
+  gabung_waktu: false,
+  unit_model: '',
+  unit_serial_no: '',
+};
 
 interface MarDetailFormProps {
   marId: string;
@@ -25,7 +34,22 @@ interface MarDetailFormProps {
     start_time: string | null;
     finish_time: string | null;
     status_job: string | null;
+    unit_model?: string | null;
+    unit_serial_no?: string | null;
+    gabung_waktu?: boolean | null;
   }[];
+}
+
+// Baris yang digabung memakai Start/Finish dari baris pertama kelompoknya.
+// Baris pertama tidak bisa digabung karena tidak ada baris sebelumnya.
+function terapkanGabung(rows: MarRow[]): MarRow[] {
+  const list = rows.map((r, i) => (i === 0 ? { ...r, gabung_waktu: false } : r));
+  for (const [awal, akhir] of kelompokWaktu(list)) {
+    for (let i = awal + 1; i <= akhir; i++) {
+      list[i] = { ...list[i], start_time: list[awal].start_time, finish_time: list[awal].finish_time };
+    }
+  }
+  return list;
 }
 
 function orNull(value: string): string | null {
@@ -51,6 +75,10 @@ export default function MarDetailForm({ marId, initial, initialRows }: MarDetail
           start_time: jamInput(r.start_time),
           finish_time: jamInput(r.finish_time),
           status_job: r.status_job ?? '',
+          ganti_unit: Boolean(r.unit_model || r.unit_serial_no),
+          gabung_waktu: Boolean(r.gabung_waktu),
+          unit_model: r.unit_model ?? '',
+          unit_serial_no: r.unit_serial_no ?? '',
         }))
       : [{ ...EMPTY_ROW }]
   );
@@ -69,6 +97,30 @@ export default function MarDetailForm({ marId, initial, initialRows }: MarDetail
     });
   }
 
+  function toggleGabungWaktu(index: number, on: boolean) {
+    setRows((prev) => prev.map((row, i) => (i === index ? { ...row, gabung_waktu: on } : row)));
+    setRowErrors((prev) => {
+      if (!prev[index]) return prev;
+      const next = { ...prev, [index]: { ...prev[index] } };
+      delete next[index].start_time;
+      delete next[index].finish_time;
+      return next;
+    });
+  }
+
+  function toggleGantiUnit(index: number, on: boolean) {
+    setRows((prev) => prev.map((row, i) => (i === index ? { ...row, ganti_unit: on } : row)));
+    if (!on) {
+      setRowErrors((prev) => {
+        if (!prev[index]) return prev;
+        const next = { ...prev, [index]: { ...prev[index] } };
+        delete next[index].unit_model;
+        delete next[index].unit_serial_no;
+        return next;
+      });
+    }
+  }
+
   function addRow() {
     if (rows.length >= MAX_MAR_ROWS) return;
     setRows((prev) => [...prev, { ...EMPTY_ROW }]);
@@ -81,7 +133,12 @@ export default function MarDetailForm({ marId, initial, initialRows }: MarDetail
 
   // Cek kolom wajib. Mengembalikan true kalau semua lengkap.
   function validate(): boolean {
-    const parsed = marDetailSchema.safeParse({ wo_number: woNumber, no_operation: noOperation, smr, rows });
+    const parsed = marDetailSchema.safeParse({
+      wo_number: woNumber,
+      no_operation: noOperation,
+      smr,
+      rows: terapkanGabung(rows).map((r, i) => (i === 0 ? { ...r, ganti_unit: false } : r)),
+    });
     if (parsed.success) {
       setRowErrors({});
       setSmrError(null);
@@ -140,7 +197,7 @@ export default function MarDetailForm({ marId, initial, initialRows }: MarDetail
 
     setBusy(goNext ? 'next' : 'draft');
     try {
-      const keep = goNext ? rows : rows.filter(hasContent);
+      const keep = terapkanGabung(goNext ? rows : rows.filter(hasContent));
 
       const { error: deleteError } = await supabase.from('mar_rows').delete().eq('mar_id', marId);
       if (deleteError) throw deleteError;
@@ -154,6 +211,10 @@ export default function MarDetailForm({ marId, initial, initialRows }: MarDetail
             start_time: row.start_time || null,
             finish_time: row.finish_time || null,
             status_job: row.status_job || null,
+            gabung_waktu: i > 0 && row.gabung_waktu,
+            // Baris pertama selalu memakai unit utama MAR (dari langkah 1)
+            unit_model: i > 0 && row.ganti_unit ? orNull(row.unit_model) : null,
+            unit_serial_no: i > 0 && row.ganti_unit ? orNull(row.unit_serial_no) : null,
           }))
         );
         if (insertError) throw insertError;
@@ -173,18 +234,20 @@ export default function MarDetailForm({ marId, initial, initialRows }: MarDetail
     }
   }
 
+  const groups = kelompokWaktu(rows.map((r, i) => (i === 0 ? { gabung_waktu: false } : r)));
+
   return (
     <div className="fform">
       <div className="fgroup">
         <label className="flabel flabel--strong" htmlFor="wo_number">
-          WO number
+          WO number <span className="fopt">(opsional)</span>
         </label>
         <input id="wo_number" type="text" className="finput" value={woNumber} onChange={(e) => setWoNumber(e.target.value)} />
       </div>
 
       <div className="fgroup">
         <label className="flabel flabel--strong" htmlFor="no_operation">
-          NO operation
+          NO operation <span className="fopt">(opsional)</span>
         </label>
         <input
           id="no_operation"
@@ -197,7 +260,7 @@ export default function MarDetailForm({ marId, initial, initialRows }: MarDetail
 
       <div className="fgroup" id="smr">
         <label className="flabel flabel--strong" htmlFor="smr_input">
-          SMR (HM/KM)
+          SMR (HM/KM) <span className="fopt">(opsional)</span>
         </label>
         <input id="smr_input" type="text" inputMode="decimal" className="finput" value={smr} onChange={(e) => {
           setSmr(e.target.value);
@@ -213,8 +276,14 @@ export default function MarDetailForm({ marId, initial, initialRows }: MarDetail
       {rows.map((row, index) => {
         const errs = rowErrors[index] ?? {};
         const invalid = Object.keys(errs).length > 0;
-        const menit = hitungDurasiMenit(row.start_time, row.finish_time);
         const idp = 'mar-' + index + '-';
+
+        // Kelompok waktu baris ini: baris yang digabung mengikuti baris pertama kelompoknya
+        const gabung = index > 0 && row.gabung_waktu;
+        const kelompok = groups.find(([awal, akhir]) => index >= awal && index <= akhir) ?? [index, index];
+        const lead = rows[kelompok[0]];
+        const menit = hitungDurasiMenit(lead.start_time, lead.finish_time);
+        const barisKelompok = kelompok[1] > kelompok[0] ? 'Baris ' + (kelompok[0] + 1) + '\u2013' + (kelompok[1] + 1) : null;
 
         return (
           <div key={index} id={'mar-row-' + index} className={invalid ? 'mrow mrow--invalid' : 'mrow'}>
@@ -246,44 +315,109 @@ export default function MarDetailForm({ marId, initial, initialRows }: MarDetail
               {errs.job_description && <p className="ferror">{errs.job_description}</p>}
             </div>
 
-            <div className="fgrid">
-              <div className="fgroup">
-                <label className="flabel" htmlFor={idp + 'start_time'}>
-                  Start
-                </label>
+            {index > 0 && (
+              <label className="munit-check">
                 <input
-                  id={idp + 'start_time'}
-                  type="time"
-                  className="finput"
-                  value={row.start_time}
-                  onChange={(e) => updateRow(index, 'start_time', e.target.value)}
+                  type="checkbox"
+                  checked={row.gabung_waktu}
+                  onChange={(e) => toggleGabungWaktu(index, e.target.checked)}
                 />
-                {errs.start_time && <p className="ferror">{errs.start_time}</p>}
-              </div>
-              <div className="fgroup">
-                <label className="flabel" htmlFor={idp + 'finish_time'}>
-                  Finish
-                </label>
-                <input
-                  id={idp + 'finish_time'}
-                  type="time"
-                  className="finput"
-                  value={row.finish_time}
-                  onChange={(e) => updateRow(index, 'finish_time', e.target.value)}
-                />
-                {errs.finish_time && <p className="ferror">{errs.finish_time}</p>}
-              </div>
-            </div>
+                Samakan Start/Finish dengan baris sebelumnya <span className="fopt">(opsional)</span>
+              </label>
+            )}
 
-            <div className="mdur">
-              <div>
-                <span className="mdur__title">
-                  <TimerIcon /> Durasi Pekerjaan
-                </span>
-                <span className="mdur__hint">Dihitung otomatis dari waktu mulai dan selesai.</span>
+            {gabung ? (
+              <p className="mgabung">
+                Start/Finish mengikuti baris {kelompok[0] + 1} ({lead.start_time || '--:--'} - {lead.finish_time || '--:--'})
+              </p>
+            ) : (
+              <>
+                <div className="fgrid">
+                  <div className="fgroup">
+                    <label className="flabel" htmlFor={idp + 'start_time'}>
+                      Start
+                    </label>
+                    <input
+                      id={idp + 'start_time'}
+                      type="time"
+                      className="finput"
+                      value={row.start_time}
+                      onChange={(e) => updateRow(index, 'start_time', e.target.value)}
+                    />
+                    {errs.start_time && <p className="ferror">{errs.start_time}</p>}
+                  </div>
+                  <div className="fgroup">
+                    <label className="flabel" htmlFor={idp + 'finish_time'}>
+                      Finish
+                    </label>
+                    <input
+                      id={idp + 'finish_time'}
+                      type="time"
+                      className="finput"
+                      value={row.finish_time}
+                      onChange={(e) => updateRow(index, 'finish_time', e.target.value)}
+                    />
+                    {errs.finish_time && <p className="ferror">{errs.finish_time}</p>}
+                  </div>
+                </div>
+
+                <div className="mdur">
+                  <div>
+                    <span className="mdur__title">
+                      <TimerIcon /> Durasi Pekerjaan
+                    </span>
+                    <span className="mdur__hint">
+                      {barisKelompok
+                        ? 'Satu durasi untuk ' + barisKelompok + '.'
+                        : 'Dihitung otomatis dari waktu mulai dan selesai.'}
+                    </span>
+                  </div>
+                  <span className="mdur__value">{formatDurasiPanjang(menit)}</span>
+                </div>
+              </>
+            )}
+
+            {index > 0 && (
+              <label className="munit-check">
+                <input
+                  type="checkbox"
+                  checked={row.ganti_unit}
+                  onChange={(e) => toggleGantiUnit(index, e.target.checked)}
+                />
+                Unit / SN berbeda mulai baris ini <span className="fopt">(opsional)</span>
+              </label>
+            )}
+
+            {index > 0 && row.ganti_unit && (
+              <div className="fgrid">
+                <div className="fgroup">
+                  <label className="flabel" htmlFor={idp + 'unit_model'}>
+                    Model
+                  </label>
+                  <input
+                    id={idp + 'unit_model'}
+                    type="text"
+                    className="finput"
+                    value={row.unit_model}
+                    onChange={(e) => updateRow(index, 'unit_model', e.target.value)}
+                  />
+                  {errs.unit_model && <p className="ferror">{errs.unit_model}</p>}
+                </div>
+                <div className="fgroup">
+                  <label className="flabel" htmlFor={idp + 'unit_serial_no'}>
+                    Serial no.
+                  </label>
+                  <input
+                    id={idp + 'unit_serial_no'}
+                    type="text"
+                    className="finput"
+                    value={row.unit_serial_no}
+                    onChange={(e) => updateRow(index, 'unit_serial_no', e.target.value)}
+                  />
+                  {errs.unit_serial_no && <p className="ferror">{errs.unit_serial_no}</p>}
+                </div>
               </div>
-              <span className="mdur__value">{formatDurasiPanjang(menit)}</span>
-            </div>
+            )}
 
             <div className="fgroup">
               <p className="flabel flabel--strong">Status Job</p>

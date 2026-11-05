@@ -52,3 +52,41 @@ export function jamInput(value: string | null | undefined): string {
 export function jamTampil(value: string | null | undefined): string {
   return value ? value.slice(0, 5).replace(':', '.') : '-';
 }
+
+// ===== Nama mekanik (bisa lebih dari satu) =====
+// Disimpan di satu kolom "nama" dengan pemisah " / ", misalnya "Budi / Andi".
+const PEMISAH_NAMA = ' / ';
+
+export function pisahNama(value: string | null | undefined): string[] {
+  return (value ?? '')
+    .split('/')
+    .map((n) => n.trim())
+    .filter(Boolean);
+}
+
+export function gabungNama(list: string[]): string {
+  return list
+    .map((n) => n.trim())
+    .filter(Boolean)
+    .join(PEMISAH_NAMA);
+}
+
+// Nama paling depan, dipakai di kotak tanda tangan
+export function namaUtama(value: string | null | undefined): string {
+  return pisahNama(value)[0] ?? '';
+}
+
+// ===== Start/Finish digabung =====
+// Baris dengan gabung_waktu = true memakai Start/Finish baris sebelumnya (satu rentang untuk beberapa pekerjaan).
+// Mengembalikan kelompok baris berurutan: [indeks awal, indeks akhir].
+export function kelompokWaktu(rows: { gabung_waktu?: boolean | null }[]): [number, number][] {
+  const groups: [number, number][] = [];
+  rows.forEach((row, i) => {
+    if (i > 0 && row.gabung_waktu && groups.length > 0) {
+      groups[groups.length - 1][1] = i;
+    } else {
+      groups.push([i, i]);
+    }
+  });
+  return groups;
+}

@@ -3,6 +3,7 @@ import SubPageHeader from '@/components/profile/SubPageHeader';
 import BappCard from '@/components/bapp/BappCard';
 import AdminBottomNav from '@/components/layout/AdminBottomNav';
 import { UserIcon } from '@/components/auth/AuthIcons';
+import DocTypeToggle, { type DocType } from '@/components/layout/DocTypeToggle';
 import { formatDuration, formatRelative, STUCK_DAYS, type MekanikStats } from '@/lib/mekanikStats';
 import '@/styles/pages/admin.css';
 import '@/styles/pages/admin-mekanik.css';
@@ -17,6 +18,8 @@ export interface DetailBapp {
 
 interface MekanikDetailViewProps {
   id: string;
+  /** Jenis dokumen yang ditampilkan: BAPP atau MAR */
+  type: DocType;
   name: string;
   email: string;
   role: 'admin' | 'mekanik';
@@ -29,6 +32,7 @@ interface MekanikDetailViewProps {
 
 export default function MekanikDetailView({
   id,
+  type,
   name,
   email,
   role,
@@ -38,6 +42,10 @@ export default function MekanikDetailView({
   stats,
   recent,
 }: MekanikDetailViewProps) {
+  const label = type === 'mar' ? 'MAR' : 'BAPP';
+  const detailBase = type === 'mar' ? '/admin/mar/' : '/admin/bapp/';
+  const historyHref = '/admin/history?mekanik=' + id + (type === 'mar' ? '&type=mar' : '');
+
   return (
     <div className="app-shell">
       <SubPageHeader title="Detail mekanik" backHref="/admin/mekanik" />
@@ -61,11 +69,16 @@ export default function MekanikDetailView({
             </div>
           </section>
 
+          <DocTypeToggle
+            active={type}
+            hrefFor={(t) => '/admin/mekanik/' + id + (t === 'mar' ? '?type=mar' : '')}
+          />
+
           <div className="admin__summary" style={{ marginTop: 16 }}>
             <Tile label="Draft" value={stats.draft} />
             <Tile label="Menunggu TTD" value={stats.menunggu} />
             <Tile label="Selesai bulan ini" value={stats.selesaiBulanIni} />
-            <Tile label="Total BAPP" value={stats.total} />
+            <Tile label={'Total ' + label} value={stats.total} />
           </div>
 
           <section className="mkd-info">
@@ -76,22 +89,22 @@ export default function MekanikDetailView({
             <InfoRow label="Aktivitas terakhir" value={formatRelative(stats.lastActivity)} />
             <InfoRow
               label={`Menggantung (> ${STUCK_DAYS} hari)`}
-              value={stats.menggantung > 0 ? `${stats.menggantung} BAPP` : 'Tidak ada'}
+              value={stats.menggantung > 0 ? `${stats.menggantung} ${label}` : 'Tidak ada'}
               danger={stats.menggantung > 0}
             />
           </section>
 
-          <p className="mkd-title">BAPP terbaru</p>
+          <p className="mkd-title">{label} terbaru</p>
           <div className="mkd-list">
             {recent.map((bapp) => (
-              <BappCard key={bapp.id} bapp={bapp} href={'/admin/bapp/' + bapp.id} />
+              <BappCard key={bapp.id} bapp={bapp} href={detailBase + bapp.id} />
             ))}
-            {recent.length === 0 && <p className="mk-empty">Belum ada BAPP dibuat</p>}
+            {recent.length === 0 && <p className="mk-empty">Belum ada {label} dibuat</p>}
           </div>
 
           {stats.total > 0 && (
-            <a href={'/admin/history?mekanik=' + id} className="mkd-btn">
-              Lihat semua BAPP ({stats.total})
+            <a href={historyHref} className="mkd-btn">
+              Lihat semua {label} ({stats.total})
             </a>
           )}
         </div>

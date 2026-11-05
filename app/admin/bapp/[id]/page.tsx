@@ -1,6 +1,20 @@
+import Image from 'next/image';
 import { createServerClient } from '@/lib/supabase/server';
 import { redirect, notFound } from 'next/navigation';
+import SubPageHeader from '@/components/profile/SubPageHeader';
 import StatusBadge from '@/components/bapp/StatusBadge';
+import AdminBottomNav from '@/components/layout/AdminBottomNav';
+import { adminBackHref } from '@/lib/adminBack';
+import '@/styles/pages/admin.css';
+import '@/styles/pages/admin-mekanik.css';
+import '@/styles/pages/admin-detail.css';
+
+interface JobDescRow {
+  id: string;
+  urutan: number;
+  component: string | null;
+  job_desc: string | null;
+}
 
 export default async function AdminBappDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -20,79 +34,98 @@ export default async function AdminBappDetailPage({ params }: { params: Promise<
     .eq('id', id)
     .single();
 
-  if (!bapp) notFound();
+  if (!bapp) {
+    // Link lama yang mengarah ke /admin/bapp/<id MAR>: alihkan ke halaman detail MAR
+    const { data: mar } = await supabase.from('mar').select('id').eq('id', id).maybeSingle();
+    if (mar) redirect('/admin/mar/' + id);
+    notFound();
+  }
 
   const { data: mekanik } = await supabase.from('users').select('name, email').eq('id', bapp.mekanik_id).single();
 
-  const sortedJobDesc = (bapp.job_desc ?? []).sort(
-    (a: { urutan: number }, b: { urutan: number }) => a.urutan - b.urutan
-  );
+  const jobs: JobDescRow[] = (bapp.job_desc ?? []).sort((a: JobDescRow, b: JobDescRow) => a.urutan - b.urutan);
+  const backHref = await adminBackHref('/admin/dashboard', '/admin/bapp/' + id);
+  const selesai = bapp.status === 'completed' || bapp.status === 'reviewed';
+
+  const info: { label: string; value: string }[] = [
+    { label: 'Dibuat oleh', value: (mekanik?.name ?? '-') + (mekanik?.email ? ' (' + mekanik.email + ')' : '') },
+    { label: 'Dibuat', value: new Date(bapp.created_at).toLocaleString('id-ID') },
+    { label: 'Model', value: bapp.unit_model ?? '-' },
+    { label: 'Serial no.', value: bapp.unit_serial_no ?? '-' },
+    { label: 'SMR', value: bapp.smr ?? '-' },
+    { label: 'Lokasi unit', value: bapp.unit_location ?? '-' },
+  ];
 
   return (
-    <div className="flex min-h-screen flex-col px-4 pt-6 pb-10">
-      <a href="/admin/dashboard" className="mb-3 text-xs text-blue-600">
-        &larr; Kembali
-      </a>
+    <div className="app-shell">
+      <SubPageHeader title="Detail BAPP" backHref={backHref} />
 
-      <div className="mb-4 flex items-start justify-between">
-        <div>
-          <h1 className="text-lg font-medium">{bapp.unit_model ?? '(belum diisi)'}</h1>
-          <p className="text-sm text-gray-500">{bapp.nama_customer ?? '-'}</p>
+      <main className="mk-page">
+        <div className="mk-inner mk-inner--narrow">
+          <section className="ad-head">
+            <div>
+              <p className="ad-head__kind">BAPP</p>
+              <p className="ad-head__title">{bapp.unit_model ?? '(belum diisi)'}</p>
+              <p className="ad-head__sub">{bapp.nama_customer ?? '-'}</p>
+            </div>
+            <StatusBadge status={bapp.status} />
+          </section>
+
+          <section className="mkd-info">
+            {info.map((item) => (
+              <div key={item.label} className="mkd-info__row">
+                <span className="mkd-info__label">{item.label}</span>
+                <span className="mkd-info__value">{item.value}</span>
+              </div>
+            ))}
+          </section>
+
+          <p className="mkd-title">Pekerjaan ({jobs.length})</p>
+          <div className="ad-card">
+            {jobs.length === 0 && <p className="ad-empty">Belum ada pekerjaan diisi</p>}
+            {jobs.map((row, index) => (
+              <div key={row.id} className="ad-job">
+                <p className="ad-job__title">
+                  {index + 1}. {row.component ?? '-'}
+                </p>
+                {row.job_desc && <p className="ad-job__meta">{row.job_desc}</p>}
+              </div>
+            ))}
+          </div>
+
+          {bapp.catatan_mekanik && (
+            <>
+              <p className="mkd-title">Catatan mekanik</p>
+              <div className="ad-card">
+                <p className="ad-note">{bapp.catatan_mekanik}</p>
+              </div>
+            </>
+          )}
+
+          {bapp.catatan_customer && (
+            <>
+              <p className="mkd-title">Catatan customer</p>
+              <div className="ad-card">
+                <p className="ad-note">{bapp.catatan_customer}</p>
+              </div>
+            </>
+          )}
+
+          {selesai ? (
+            <a href={'/api/bapp/' + bapp.id + '/pdf'} target="_blank" rel="noopener noreferrer" className="mkd-btn">
+              Buka PDF
+            </a>
+          ) : (
+            <p className="ad-hint">PDF tersedia setelah customer menandatangani</p>
+          )}
         </div>
-        <StatusBadge status={bapp.status} />
-      </div>
 
-      <div className="mb-4 rounded-lg bg-gray-50 p-3 text-xs text-gray-600">
-        Dibuat oleh <span className="font-medium">{mekanik?.name}</span> ({mekanik?.email})
-        <br />
-        {new Date(bapp.created_at).toLocaleString('id-ID')}
-      </div>
-
-      <div className="mb-4 rounded-lg border p-4">
-        <p className="mb-0.5 text-xs text-gray-500">Unit</p>
-        <p className="mb-3 text-sm">
-          {bapp.unit_model ?? '-'} / {bapp.unit_serial_no ?? '-'} &middot; SMR {bapp.smr ?? '-'} &middot;{' '}
-          {bapp.unit_location ?? '-'}
-        </p>
-
-        <p className="mb-1.5 text-xs text-gray-500">Pekerjaan ({sortedJobDesc.length})</p>
-        <div className="flex flex-col gap-1.5 border-t pt-2">
-          {sortedJobDesc.length === 0 && <p className="text-xs text-gray-400">Belum ada pekerjaan diisi</p>}
-          {sortedJobDesc.map((row: { id: string; component: string | null; job_desc: string | null }) => (
-            <p key={row.id} className="text-sm">
-              <span className="font-medium">{row.component}</span>
-              {row.job_desc ? ' - ' + row.job_desc : ''}
-            </p>
-          ))}
+        <div className="mkd-footer">
+          <Image src="/moving-as-one.png" alt="Moving as one" width={250} height={89} />
         </div>
-      </div>
+      </main>
 
-      {bapp.catatan_mekanik && (
-        <div className="mb-3 rounded-lg border p-3">
-          <p className="mb-1 text-xs font-medium text-gray-500">Catatan Mekanik</p>
-          <p className="text-sm">{bapp.catatan_mekanik}</p>
-        </div>
-      )}
-
-      {bapp.catatan_customer && (
-        <div className="mb-4 rounded-lg border p-3">
-          <p className="mb-1 text-xs font-medium text-gray-500">Catatan Customer</p>
-          <p className="text-sm">{bapp.catatan_customer}</p>
-        </div>
-      )}
-
-      {bapp.status === 'completed' || bapp.status === 'reviewed' ? (
-        <a
-          href={'/api/bapp/' + bapp.id + '/pdf'}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex h-11 w-full items-center justify-center rounded-lg bg-black text-sm font-medium text-white"
-        >
-          Buka PDF
-        </a>
-      ) : (
-        <p className="text-center text-sm text-gray-400">PDF tersedia setelah customer menandatangani</p>
-      )}
+      <AdminBottomNav active="history" />
     </div>
   );
 }
