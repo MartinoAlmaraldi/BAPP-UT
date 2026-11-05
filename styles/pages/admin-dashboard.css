@@ -1,0 +1,46 @@
+/* ===== Dashboard admin: BAPP dan MAR digabung ===== */
+
+/* Rincian kecil di bawah angka kartu ringkasan, misalnya "BAPP 10 • MAR 4" */
+.admin-card__split {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--color-gray-text);
+}
+
+/* Label jenis dokumen */
+.doc-tag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 7px;
+  border: 1px solid #000000;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #000000;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.03em;
+  vertical-align: 1px;
+}
+
+.doc-tag--mar {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+}
+
+@media (min-width: 1024px) {
+  .admin-card__split {
+    font-size: 13px;
+  }
+
+  /* Tabel dengan kolom Jenis di depan */
+  .admin-table--jenis .admin-table__head,
+  .admin-table--jenis .admin-table__row {
+    grid-template-columns: 80px 1.5fr 1.5fr 1fr 1fr 120px;
+  }
+
+  .admin-table--jenis .doc-tag {
+    margin-right: 0;
+    font-size: 11px;
+  }
+}

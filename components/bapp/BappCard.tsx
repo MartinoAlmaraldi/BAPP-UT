@@ -15,9 +15,11 @@ interface BappCardProps {
   by?: string;
   /** Jenis dokumen, menentukan rute default. */
   kind?: 'bapp' | 'mar';
+  /** Tampilkan label jenis (BAPP / MAR) di depan judul, dipakai di dashboard admin. */
+  showKind?: boolean;
 }
 
-export default function BappCard({ bapp, href, by, kind = 'bapp' }: BappCardProps) {
+export default function BappCard({ bapp, href, by, kind = 'bapp', showKind = false }: BappCardProps) {
   const link = href ?? getHrefByStatus(bapp.id, bapp.status, kind);
   const tanggal = new Date(bapp.created_at).toLocaleDateString('id-ID', {
     day: 'numeric',
@@ -29,6 +31,7 @@ export default function BappCard({ bapp, href, by, kind = 'bapp' }: BappCardProp
     <a href={link} className="bapp-card">
       <div>
         <p className="bapp-card__title">
+          {showKind && <span className={'doc-tag doc-tag--' + kind}>{kind === 'mar' ? 'MAR' : 'BAPP'}</span>}
           {bapp.unit_model ?? '(belum diisi)'} &bull; {bapp.nama_customer ?? '(belum diisi)'}
         </p>
         <p className="bapp-card__date">{by ? `${by} \u2022 ${tanggal}` : tanggal}</p>
