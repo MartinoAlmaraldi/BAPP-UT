@@ -345,10 +345,12 @@ function drawAllTables(page: PDFPage) {
   // Garis header1/header2 dan header2/data HANYA untuk area UNIT+ENGINE, SMR & LOCATION menyatu (rowspan)
   hLine(page, UNIT_TABLE.left, UNIT_TABLE.cols.smr, UNIT_TABLE.top2);
   hLine(page, UNIT_TABLE.left, UNIT_TABLE.right, UNIT_TABLE.top3);
-  vLine(page, UNIT_TABLE.cols.engineModel - 0.5, UNIT_TABLE.top1, UNIT_TABLE.top2); // UNIT|ENGINE (header1)
+  // Garis UNIT|ENGINE, SMR, dan LOCATION lurus satu garis dari atas sampai bawah tabel
+  vLine(page, UNIT_TABLE.cols.engineModel, UNIT_TABLE.top1, UNIT_TABLE.bottom);
   vLine(page, UNIT_TABLE.cols.smr, UNIT_TABLE.top1, UNIT_TABLE.bottom);
   vLine(page, UNIT_TABLE.cols.location, UNIT_TABLE.top1, UNIT_TABLE.bottom);
-  [UNIT_TABLE.cols.serialNo, UNIT_TABLE.cols.codeUnit, UNIT_TABLE.cols.engineModel, UNIT_TABLE.cols.engineSerialNo].forEach((x) =>
+  // Garis antar kolom di dalam UNIT dan ENGINE mulai dari baris header kedua
+  [UNIT_TABLE.cols.serialNo, UNIT_TABLE.cols.codeUnit, UNIT_TABLE.cols.engineSerialNo].forEach((x) =>
     vLine(page, x, UNIT_TABLE.top2, UNIT_TABLE.bottom)
   );
 
